@@ -33,12 +33,13 @@ jobs:
           rm -rf src/content/notes/* src/content/news/*
 
       # 笔记仓库整体拉到临时目录, 仓库内部约定用 notes/ 和 news/ 两个子目录分类。
-      # TODO: 替换 repository 为你的笔记仓库 (如 your-name/portfolio-notes)。
-      # 若笔记仓库是私有的, 需配置带 repo 权限的 PAT 并在此传入 token。
+      # continue-on-error: 笔记仓库目前还是空仓库(无任何提交), checkout 会失败;
+      # 允许这步失败不阻塞网站本身的构建部署, 等笔记仓库有内容后会自动被拉取到。
       - name: Checkout 笔记仓库
         uses: actions/checkout@v4
+        continue-on-error: true
         with:
-          repository: your-name/portfolio-notes
+          repository: Shinyleaf798/my-note
           path: _notes-source
           # token: ${{ secrets.NOTES_REPO_TOKEN }}   # 私有仓库时取消注释
 
