@@ -1,0 +1,116 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { url } from '../../lib/url';
+import { formatDate } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+
+// 自动聚合关联到本项目的所有笔记 (无需手动维护列表)
+const relatedNotes = (await getCollection('notes'))
+  .filter((n) => n.data.relatedProject === project.id)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<BaseLayout title={project.data.title} description={project.data.summary}>
+  <div class="section container">
+    <div class="article-wrap">
+      <a class="back-link" href={url('/projects')}>← 返回 Projects</a>
+
+      <div class="article-body" data-pagefind-body>
+      <header class="article-head">
+        <div class="article-meta">
+          <span>{formatDate(project.data.date)}</span>
+          {project.data.featured && <span class="badge">featured</span>}
+        </div>
+        <h1 data-pagefind-meta="title">{project.data.title}</h1>
+        <p class="muted">{project.data.summary}</p>
+
+        <div class="head-row">
+          <div class="tag-row">
+            {project.data.tags.map((t) => (
+              <span class="tag" data-static>{t}</span>
+            ))}
+          </div>
+          {
+            project.data.repoUrl && (
+              <a class="btn" href={project.data.repoUrl} target="_blank" rel="noopener">
+                ↗ 查看仓库
+              </a>
+            )
+          }
+        </div>
+      </header>
+
+      <div class="markdown">
+        <Content />
+      </div>
+
+      {
+        relatedNotes.length > 0 && (
+          <section class="related-notes" data-pagefind-ignore>
+            <h2 class="rn-title">相关笔记</h2>
+            <ul>
+              {relatedNotes.map((n) => (
+                <li>
+                  <a href={url(`/notes/${n.id}`)}>{n.data.title}</a>
+                  <span class="muted mono"> · {formatDate(n.data.date)}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .article-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .article-body {
+    max-width: 760px;
+  }
+  .head-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .tag[data-static] {
+    cursor: default;
+  }
+  .related-notes {
+    margin-top: 48px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .rn-title {
+    font-size: 18px;
+    margin: 0 0 16px;
+  }
+  .related-notes ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .related-notes li {
+    font-size: 15px;
+  }
+</style>

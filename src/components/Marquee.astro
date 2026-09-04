@@ -1,0 +1,87 @@
+---
+import { getCollection } from 'astro:content';
+
+// 滚动标签带的主题词: 取自真实的笔记分类与标签
+const notes = await getCollection('notes');
+const topicSet = new Set<string>();
+for (const n of notes) {
+  topicSet.add(n.data.category);
+  n.data.tags.forEach((t) => topicSet.add(t));
+}
+let topics = [...topicSet];
+if (topics.length === 0) {
+  topics = ['Python', 'Rust', '日语', '前端', 'Astro', '学习笔记'];
+}
+---
+
+<div class="marquee-wrap" aria-hidden="true">
+  <div class="marquee-band">
+    <div class="marquee-track">
+      {[...topics, ...topics].map((t) => (
+        <span class="marquee-item">
+          <span class="spark">✦</span>{t}
+        </span>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  /* overflow-x: clip 只夹掉横向探出的角尖(防横向滚动条),
+     纵向不夹 —— 倾斜后探出的上下角可以完整显示。
+     上下 margin 给倾斜角留出空间, 不与相邻内容重叠。 */
+  .marquee-wrap {
+    overflow-x: clip;
+    margin: 10px 0;
+  }
+  .marquee-band {
+    position: relative;
+    /* 略宽于视口并左移, 倾斜后两端不会露出空隙 */
+    width: 104%;
+    margin-left: -2%;
+    min-height: 62px;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(90deg, #0d1117, #10261f 50%, #0d1117);
+    border-top: 1px solid var(--accent-dim);
+    border-bottom: 1px solid var(--accent-dim);
+    transform: rotate(-1.6deg);
+    overflow: hidden; /* 夹住滚动文字到带子内 */
+  }
+  .marquee-track {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: max-content;
+    line-height: 1;
+    animation: marquee 32s linear infinite;
+  }
+  .marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 22px;
+    padding: 0 22px;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1;
+    color: #e6edf3;
+    white-space: nowrap;
+  }
+  .marquee-item .spark {
+    color: #2dd4bf;
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+</style>

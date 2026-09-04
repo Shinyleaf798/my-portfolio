@@ -1,0 +1,91 @@
+---
+import { getCollection } from 'astro:content';
+import { url } from '../lib/url';
+
+interface Props {
+  currentId: string;
+}
+const { currentId } = Astro.props;
+
+// 所有笔记按 category 分组, 组内按日期倒序 —— 作为左侧文档导航
+const notes = (await getCollection('notes')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const groups = new Map<string, typeof notes>();
+for (const n of notes) {
+  if (!groups.has(n.data.category)) groups.set(n.data.category, []);
+  groups.get(n.data.category)!.push(n);
+}
+const categories = [...groups.entries()].sort((a, b) =>
+  a[0].localeCompare(b[0])
+);
+---
+
+<nav class="notes-sidebar" aria-label="笔记导航">
+  {
+    categories.map(([cat, items]) => (
+      <div class="ns-group">
+        <p class="ns-cat">{cat}</p>
+        <ul>
+          {items.map((n) => (
+            <li>
+              <a
+                href={url(`/notes/${n.id}`)}
+                class:list={['ns-link', { active: n.id === currentId }]}
+              >
+                {n.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+</nav>
+
+<style>
+  .notes-sidebar {
+    position: sticky;
+    top: calc(var(--nav-h) + 24px);
+    max-height: calc(100vh - var(--nav-h) - 48px);
+    overflow-y: auto;
+    font-size: 13.5px;
+    padding-right: 8px;
+  }
+  .ns-group {
+    margin-bottom: 24px;
+  }
+  .ns-cat {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
+  .ns-group ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--border);
+  }
+  .ns-link {
+    display: block;
+    padding: 5px 0 5px 14px;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    color: var(--text-muted);
+    line-height: 1.45;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .ns-link:hover {
+    color: var(--text-primary);
+  }
+  .ns-link.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+</style>

@@ -1,0 +1,303 @@
+---
+import { url } from '../lib/url';
+
+// TODO: 替换为你的真实链接
+const githubUrl = 'https://github.com/your-name';
+const email = 'you@example.com';
+---
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <span class="hero-badge">嗨 👋 欢迎来到我的学习日记</span>
+
+      <h1 class="hero-title">
+        记录我的<br /><span class="accent">学习旅程</span>
+      </h1>
+
+      <p class="hero-sub">
+        这是我记录学习过程、整理项目和收集知识的地方 —— 一本持续更新的公开学习日记,
+        而不是一份简历。
+      </p>
+
+      <div class="hero-cta">
+        <a class="cta-primary" href={url('/notes')}>
+          浏览笔记 <span aria-hidden="true">↗</span>
+        </a>
+        <a class="cta-secondary" href={url('/projects')}>
+          看看项目 <span aria-hidden="true">→</span>
+        </a>
+      </div>
+
+      <div class="hero-social">
+        <span class="hero-social-label mono">Find me on:</span>
+        <a class="social-dot" href={githubUrl} target="_blank" rel="noopener" aria-label="GitHub">GH</a>
+        <a class="social-dot" href={`mailto:${email}`} aria-label="Email">✉</a>
+      </div>
+    </div>
+
+    <div class="hero-right" aria-hidden="true">
+      <span class="blob blob-1"></span>
+      <span class="blob blob-2"></span>
+      <div class="code-card">
+        <div class="code-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <em>~/learning.log</em>
+        </div>
+        <pre class="code-body"><code><span class="c-mut">$</span> <span class="c-acc">log</span> today
+<span class="c-mut">›</span> 学了 Rust 的所有权与借用
+<span class="c-mut">›</span> 整理了 Python asyncio 笔记
+<span class="c-mut">›</span> 记录一条 Astro 资讯
+<span class="c-ok">✓</span> keep learning<span class="cursor"></span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 40px;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: 56px;
+  }
+
+  /* ---------- 左侧文案 ---------- */
+  .hero-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    margin-bottom: 26px;
+    box-shadow: var(--card-shadow);
+  }
+  .hero-title {
+    font-size: clamp(38px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0 0 22px;
+  }
+  .hero-title .accent {
+    color: var(--accent);
+  }
+  .hero-sub {
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--text-muted);
+    max-width: 460px;
+    margin: 0 0 32px;
+  }
+
+  /* ---------- CTA 按钮 (带实色偏移投影, 呼应参考图) ---------- */
+  .hero-cta {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+    margin-bottom: 34px;
+  }
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 13px 24px;
+    border-radius: 8px;
+    background: var(--text-primary);
+    color: var(--bg-deep);
+    box-shadow: 6px 6px 0 var(--accent);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .cta-primary:hover {
+    transform: translate(3px, 3px);
+    box-shadow: 3px 3px 0 var(--accent);
+    color: var(--bg-deep);
+  }
+  .cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+  .cta-secondary:hover {
+    color: var(--accent);
+  }
+
+  /* ---------- 社交 ---------- */
+  .hero-social {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-social-label {
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  .social-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+  .social-dot:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  /* ---------- 右侧视觉: 绿色色块 + 终端卡片 ---------- */
+  .hero-right {
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 46% 54% 60% 40% / 52% 44% 56% 48%;
+    background: var(--accent);
+    filter: blur(2px);
+    z-index: 0;
+  }
+  .blob-1 {
+    width: 230px;
+    height: 230px;
+    right: -12px;
+    bottom: -34px;
+    opacity: 0.85;
+  }
+  .blob-2 {
+    width: 130px;
+    height: 130px;
+    left: 8px;
+    top: -26px;
+    opacity: 0.35;
+    background: var(--glow-indigo);
+  }
+  .code-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    background: #0d1117;
+    border: 1px solid #ffffff1f;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 16px 16px 0 var(--shadow);
+  }
+  .code-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 14px;
+    background: #161b2e;
+    border-bottom: 1px solid #ffffff14;
+  }
+  .code-bar .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #ffffff26;
+  }
+  .code-bar .dot:nth-child(1) {
+    background: #ff5f56;
+  }
+  .code-bar .dot:nth-child(2) {
+    background: #ffbd2e;
+  }
+  .code-bar .dot:nth-child(3) {
+    background: #27c93f;
+  }
+  .code-bar em {
+    margin-left: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-style: normal;
+    color: #8b949e;
+  }
+  .code-body {
+    margin: 0;
+    padding: 18px 18px 22px;
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.9;
+    color: #e6edf3;
+    white-space: pre-wrap;
+  }
+  .code-body .c-mut {
+    color: #8b949e;
+  }
+  .code-body .c-acc {
+    color: #2dd4bf;
+  }
+  .code-body .c-ok {
+    color: #27c93f;
+  }
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    margin-left: 3px;
+    vertical-align: -2px;
+    background: #2dd4bf;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cursor {
+      animation: none;
+    }
+  }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width: 860px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+      gap: 44px;
+      padding-bottom: 56px;
+    }
+    .hero-right {
+      order: 2;
+      justify-content: flex-start;
+    }
+    .code-card {
+      max-width: 380px;
+    }
+  }
+  @media (max-width: 480px) {
+    .code-card {
+      box-shadow: 10px 10px 0 var(--shadow);
+    }
+  }
+</style>

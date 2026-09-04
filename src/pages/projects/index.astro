@@ -1,0 +1,39 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import TagFilter from '../../components/TagFilter.astro';
+import { tagCounts } from '../../lib/tags';
+
+const projects = (await getCollection('projects')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const allTags = tagCounts(projects);
+---
+
+<BaseLayout title="Projects" description="折腾过的一些个人项目。">
+  <div class="section container" data-filter-scope>
+    <div class="page-header">
+      <h1>Projects</h1>
+      <p>折腾过的一些个人项目 —— <span data-result-count>{projects.length}</span> 个。</p>
+    </div>
+
+    <TagFilter tags={allTags} />
+
+    <div class="card-grid">
+      {
+        projects.map((p) => (
+          <ProjectCard
+            id={p.id}
+            title={p.data.title}
+            date={p.data.date}
+            summary={p.data.summary}
+            tags={p.data.tags}
+            featured={p.data.featured}
+          />
+        ))
+      }
+    </div>
+  </div>
+</BaseLayout>

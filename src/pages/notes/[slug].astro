@@ -1,0 +1,117 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
+import NotesSidebar from '../../components/NotesSidebar.astro';
+import { url } from '../../lib/url';
+import { formatDate } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes');
+  return notes.map((note) => ({ params: { slug: note.id }, props: { note } }));
+}
+
+const { note } = Astro.props;
+const { Content, headings } = await render(note);
+
+// 关联项目 (若为项目笔记)
+let relatedProject = null;
+if (note.data.type === 'project' && note.data.relatedProject) {
+  relatedProject = await getEntry('projects', note.data.relatedProject);
+}
+---
+
+<BaseLayout title={note.data.title} description={note.data.summary}>
+  <div class="section docs-container">
+    <div class="docs-layout">
+      <aside class="docs-nav" data-pagefind-ignore>
+        <NotesSidebar currentId={note.id} />
+      </aside>
+
+      <div class="docs-main">
+        <a class="back-link" href={url('/notes')}>← 返回 Notes</a>
+        <article class="article-body" data-pagefind-body>
+        <header class="article-head">
+          <div class="article-meta">
+            <span>{formatDate(note.data.date)}</span>
+            <span class="badge">{note.data.category}</span>
+            {note.data.type === 'project' && <span>项目笔记</span>}
+          </div>
+          <h1 data-pagefind-meta="title">{note.data.title}</h1>
+          <p class="muted">{note.data.summary}</p>
+
+          {
+            relatedProject && (
+              <p class="related">
+                关联项目:
+                <a href={url(`/projects/${relatedProject.id}`)}>
+                  {relatedProject.data.title}
+                </a>
+              </p>
+            )
+          }
+
+          <div class="tag-row">
+            {note.data.tags.map((t) => (
+              <a class="tag" href={`${url('/notes')}?tag=${encodeURIComponent(t)}`}>{t}</a>
+            ))}
+          </div>
+        </header>
+
+        <div class="markdown">
+          <Content />
+        </div>
+        </article>
+      </div>
+
+      <aside class="article-toc" data-pagefind-ignore>
+        <TableOfContents headings={headings} />
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .related {
+    font-size: 14px;
+    margin: 0 0 16px;
+  }
+
+  /* 文档三栏布局: 左侧导航 + 正文 + 右侧目录 */
+  .docs-container {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .docs-layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr) 220px;
+    gap: 48px;
+    align-items: start;
+  }
+  .docs-main {
+    min-width: 0;
+    max-width: 760px;
+  }
+  .article-toc {
+    position: relative;
+  }
+  /* 窄屏: 先收起右侧目录, 再收起左侧导航 */
+  @media (max-width: 1100px) {
+    .docs-layout {
+      grid-template-columns: 240px minmax(0, 1fr);
+    }
+    .article-toc {
+      display: none;
+    }
+  }
+  @media (max-width: 820px) {
+    .docs-layout {
+      grid-template-columns: 1fr;
+    }
+    .docs-nav {
+      display: none;
+    }
+  }

@@ -1,0 +1,40 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NewsCard from '../../components/NewsCard.astro';
+import TagFilter from '../../components/TagFilter.astro';
+import { tagCounts } from '../../lib/tags';
+
+const news = (await getCollection('news')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const allTags = tagCounts(news);
+---
+
+<BaseLayout title="News" description="平时看到的、觉得值得记一笔的资讯与个人理解。">
+  <div class="section container" data-filter-scope>
+    <div class="page-header">
+      <h1>News</h1>
+      <p>
+        看到的资讯 + 自己的解读, 共 <span data-result-count>{news.length}</span> 条。
+      </p>
+    </div>
+
+    <TagFilter tags={allTags} />
+
+    <div class="card-grid">
+      {
+        news.map((n) => (
+          <NewsCard
+            id={n.id}
+            title={n.data.title}
+            date={n.data.date}
+            summary={n.data.summary}
+            tags={n.data.tags}
+          />
+        ))
+      }
+    </div>
+  </div>
+</BaseLayout>

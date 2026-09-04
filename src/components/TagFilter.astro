@@ -1,0 +1,140 @@
+---
+interface Props {
+  // 已按频次降序排好的标签
+  tags: { tag: string; count: number }[];
+  // 超过这个数量的标签折叠进 "更多"
+  collapseAfter?: number;
+}
+const { tags, collapseAfter = 12 } = Astro.props;
+const hiddenCount = Math.max(0, tags.length - collapseAfter);
+---
+
+<div class="tag-filter" role="group" aria-label="按标签筛选">
+  <button class="tag is-active" data-filter="*">全部</button>
+  {
+    tags.map((t, i) => (
+      <button
+        data-filter={t.tag}
+        class:list={['tag', { 'is-collapsed': i >= collapseAfter }]}
+      >
+        {t.tag}
+        <span class="tf-count">{t.count}</span>
+      </button>
+    ))
+  }
+  {
+    hiddenCount > 0 && (
+      <button class="tag tf-more" data-tf-more>
+        更多 <span class="tf-count">+{hiddenCount}</span>
+      </button>
+    )
+  }
+</div>
+
+<style>
+  .tag-filter {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    align-items: center;
+  }
+  .tag-filter .tag {
+    cursor: pointer;
+    background: none;
+    font-family: var(--font-mono);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* 选中态: 提高作用域内优先级, 否则会被 background:none 盖掉,
+     导致深色字落在深色背景上而 "消失" */
+  .tag-filter .tag.is-active {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .tf-count {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--surface-3);
+    border-radius: 20px;
+    padding: 0 6px;
+    line-height: 1.6;
+  }
+  .tag.is-active .tf-count {
+    color: var(--accent-ink);
+    background: #00000026;
+  }
+  .tag.is-collapsed {
+    display: none;
+  }
+  .tag-filter.expanded .tag.is-collapsed {
+    display: inline-flex;
+  }
+  .tag-filter.expanded .tf-more {
+    display: none;
+  }
+  .tf-more {
+    color: var(--text-muted);
+  }
+</style>
+
+<script>
+  // 纯前端标签筛选: 点击标签即时过滤当前列表, 不跳转新页面。
+  // 支持通过 URL ?tag=xxx 预选, 方便 /notes/tags 快速跳转入口。
+  function initScope(scope: HTMLElement) {
+    const filter = scope.querySelector<HTMLElement>('.tag-filter');
+    if (!filter) return;
+    const buttons = Array.from(
+      filter.querySelectorAll<HTMLButtonElement>('.tag:not(.tf-more)')
+    );
+    const moreBtn = filter.querySelector<HTMLButtonElement>('[data-tf-more]');
+    const cards = Array.from(scope.querySelectorAll<HTMLElement>('[data-tags]'));
+    const countEl = scope.querySelector<HTMLElement>('[data-result-count]');
+
+    function expand() {
+      filter!.classList.add('expanded');
+    }
+
+    function apply(active: string) {
+      let shown = 0;
+      for (const card of cards) {
+        const cardTags = (card.dataset.tags || '').split(',').map((s) => s.trim());
+        const match = active === '*' || cardTags.includes(active);
+        card.style.display = match ? '' : 'none';
+        if (match) shown++;
+      }
+      buttons.forEach((b) =>
+        b.classList.toggle('is-active', b.dataset.filter === active)
+      );
+      if (countEl) countEl.textContent = String(shown);
+    }
+
+    buttons.forEach((b) => {
+      b.addEventListener('click', () => {
+        const active = b.dataset.filter || '*';
+        apply(active);
+        const u = new URL(window.location.href);
+        if (active === '*') u.searchParams.delete('tag');
+        else u.searchParams.set('tag', active);
+        history.replaceState(null, '', u);
+      });
+    });
+
+    moreBtn?.addEventListener('click', expand);
+
+    // 初始: 读取 URL 中的 ?tag=
+    const preset = new URL(window.location.href).searchParams.get('tag');
+    const presetBtn = preset
+      ? buttons.find((b) => b.dataset.filter === preset)
+      : null;
+    if (presetBtn) {
+      if (presetBtn.classList.contains('is-collapsed')) expand(); // 被折叠时展开露出
+      apply(preset!);
+    } else {
+      apply('*');
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-filter-scope]').forEach(initScope);
+</script>

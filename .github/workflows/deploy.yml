@@ -1,0 +1,65 @@
+name: Build and Deploy
+
+on:
+  # 手动触发 (在 Actions 页面点 "Run workflow")。
+  # 笔记独立仓库更新后, 来这里手动触发重新构建。
+  workflow_dispatch:
+  # 本仓库(网站代码)有更新时也自动构建
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只跑一个部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 网站仓库
+        uses: actions/checkout@v4
+
+      # 将笔记独立仓库拉取到 src/content/notes/
+      # TODO: 替换 repository 为你的笔记仓库 (如 your-name/portfolio-notes)。
+      # 若笔记仓库是私有的, 需配置带 repo 权限的 PAT 并在此传入 token。
+      - name: Checkout 笔记仓库
+        uses: actions/checkout@v4
+        with:
+          repository: your-name/portfolio-notes
+          path: src/content/notes
+          # token: ${{ secrets.NOTES_REPO_TOKEN }}   # 私有仓库时取消注释
+        continue-on-error: true # 笔记仓库尚未建立时不阻塞首次构建
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (Astro + Pagefind 索引)
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

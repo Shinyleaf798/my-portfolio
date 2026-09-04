@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { url } from '../lib/url';
+
+// Pagefind 资源在 `astro build` 之后由 `pagefind --site dist` 生成,
+// 因此搜索在 dev 环境下不可用 —— 需先 `npm run build && npm run preview`。
+const bundlePath = url('/pagefind/');
+---
+
+<BaseLayout title="搜索" description="站内全文搜索。">
+  <div class="section container search-page">
+    <div class="page-header">
+      <h1>搜索</h1>
+      <p>基于 Pagefind 的纯前端全文搜索。</p>
+    </div>
+
+    <div id="search"></div>
+
+    <p class="dev-hint muted mono">
+      提示: 搜索索引在构建时生成。本地开发 (npm run dev) 下无索引,
+      请使用 npm run build && npm run preview 查看效果。
+    </p>
+  </div>
+</BaseLayout>
+
+<link href={url('/pagefind/pagefind-ui.css')} rel="stylesheet" />
+<script is:inline define:vars={{ bundlePath }}>
+  function loadPagefind() {
+    const script = document.createElement('script');
+    script.src = bundlePath + 'pagefind-ui.js';
+    script.onload = () => {
+      // eslint-disable-next-line no-undef
+      new PagefindUI({
+        element: '#search',
+        bundlePath: bundlePath,
+        showSubResults: true,
+        showImages: false,
+        translations: {
+          placeholder: '搜索笔记、项目、资讯…',
+          zero_results: '没有找到与 "[SEARCH_TERM]" 相关的内容',
+        },
+      });
+    };
+    script.onerror = () => {
+      document.getElementById('search').innerHTML =
+        '<p class="muted">搜索索引尚未生成 (仅在构建后可用)。</p>';
+    };
+    document.head.appendChild(script);
+  }
+  loadPagefind();
+</script>
+
+<style>
+  .search-page {
+    max-width: 720px;
+    --pagefind-ui-primary: var(--accent);
+    --pagefind-ui-text: var(--text-primary);
+    --pagefind-ui-background: var(--surface);
+    --pagefind-ui-border: var(--border);
+    --pagefind-ui-tag: var(--surface-2);
+    --pagefind-ui-border-radius: 8px;
+    --pagefind-ui-font: var(--font-sans);
+  }
+  .dev-hint {
+    font-size: 12px;
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border);
+  }
+</style>

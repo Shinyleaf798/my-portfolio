@@ -1,0 +1,40 @@
+---
+import { url } from '../lib/url';
+import { formatDate } from '../lib/format';
+
+interface Props {
+  id: string;
+  title: string;
+  date: Date;
+  summary: string;
+  tags: string[];
+  featured?: boolean;
+}
+
+const { id, title, date, summary, tags, featured } = Astro.props;
+---
+
+<a class="card" href={url(`/projects/${id}`)} data-tags={tags.join(',')}>
+  <div class="meta">
+    <span>{formatDate(date)}</span>
+    {featured && <span class="badge">featured</span>}
+  </div>
+  <h3>{title}</h3>
+  <p class="summary">{summary}</p>
+  <div class="tag-row">
+    {tags.map((t) => <span class="tag" data-static>{t}</span>)}
+  </div>
+</a>
+
+<style>
+  .card {
+    color: inherit;
+  }
+  .card:hover h3 {
+    color: var(--accent);
+  }
+  /* 卡片内的 tag 仅作展示, 不响应点击态 */
+  .tag[data-static] {
+    cursor: default;
+  }
+</style>

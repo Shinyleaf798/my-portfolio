@@ -1,0 +1,95 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { url } from '../../lib/url';
+import { formatDate } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const news = await getCollection('news');
+  return news.map((item) => ({ params: { slug: item.id }, props: { item } }));
+}
+
+const { item } = Astro.props;
+const { Content } = await render(item);
+
+// 关联笔记 (可选)
+const relatedNotes = [];
+for (const slug of item.data.relatedNotes ?? []) {
+  const note = await getEntry('notes', slug);
+  if (note) relatedNotes.push(note);
+}
+---
+
+<BaseLayout title={item.data.title} description={item.data.summary}>
+  <div class="section container">
+    <a class="back-link" href={url('/news')}>← 返回 News</a>
+
+    <div class="article-body" data-pagefind-body>
+      <header class="article-head">
+        <div class="article-meta">
+          <span>{formatDate(item.data.date)}</span>
+        </div>
+        <h1 data-pagefind-meta="title">{item.data.title}</h1>
+        <p class="muted">{item.data.summary}</p>
+        <div class="tag-row">
+          {item.data.tags.map((t) => (
+            <span class="tag" data-static>{t}</span>
+          ))}
+        </div>
+      </header>
+
+      <div class="markdown">
+        <Content />
+      </div>
+
+      <div class="source">
+        <a class="btn" href={item.data.sourceUrl} target="_blank" rel="noopener">
+          ↗ 阅读原文
+        </a>
+      </div>
+
+      {
+        relatedNotes.length > 0 && (
+          <section class="related-notes" data-pagefind-ignore>
+            <h2 class="rn-title">相关笔记</h2>
+            <ul>
+              {relatedNotes.map((n) => (
+                <li>
+                  <a href={url(`/notes/${n.id}`)}>{n.data.title}</a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .article-body {
+    max-width: 760px;
+  }
+  .tag[data-static] {
+    cursor: default;
+  }
+  .source {
+    margin-top: 8px;
+  }
+  .related-notes {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .rn-title {
+    font-size: 18px;
+    margin: 0 0 14px;
+  }
+  .related-notes ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 10px;
+  }
+</style>

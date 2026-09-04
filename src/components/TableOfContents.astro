@@ -1,0 +1,99 @@
+---
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+interface Props {
+  headings: Heading[];
+}
+const { headings } = Astro.props;
+// 只取 H2 / H3 构建目录
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+  toc.length > 0 && (
+    <nav class="toc" aria-label="目录">
+      <p class="toc-title mono">On this page</p>
+      <ul>
+        {toc.map((h) => (
+          <li class:list={['toc-item', `depth-${h.depth}`]}>
+            <a href={`#${h.slug}`} data-toc-link={h.slug}>
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<style>
+  .toc {
+    position: sticky;
+    top: calc(var(--nav-h) + 24px);
+    max-height: calc(100vh - var(--nav-h) - 48px);
+    overflow-y: auto;
+    font-size: 13.5px;
+  }
+  .toc-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--border);
+  }
+  .toc-item a {
+    display: block;
+    padding: 5px 0 5px 14px;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    color: var(--text-muted);
+    line-height: 1.4;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .toc-item.depth-3 a {
+    padding-left: 26px;
+    font-size: 12.5px;
+  }
+  .toc-item a:hover {
+    color: var(--text-primary);
+  }
+  .toc-item a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+</style>
+
+<script>
+  // 滚动监听: 高亮当前正在阅读的章节对应的目录项
+  const links = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')
+  );
+  if (links.length > 0) {
+    const bySlug = new Map(links.map((l) => [l.dataset.tocLink, l]));
+    const headings = links
+      .map((l) => document.getElementById(l.dataset.tocLink!))
+      .filter((el): el is HTMLElement => !!el);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            links.forEach((l) => l.classList.remove('active'));
+            bySlug.get(entry.target.id)?.classList.add('active');
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
+    );
+    headings.forEach((h) => observer.observe(h));
+  }
+</script>

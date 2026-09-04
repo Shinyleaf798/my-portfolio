@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { url } from '../lib/url';
+---
+
+<BaseLayout title="About" description="关于我 —— 一本公开的学习日记背后的人。">
+  <div class="section container about">
+    <article class="prose">
+      <h1>关于我</h1>
+
+      <p>
+        嗨, 我是 <strong>[你的名字]</strong>。这里是我记录学习过程、整理项目和收集有用资料的地方。
+      </p>
+
+      <p>
+        我从 <em>[某个契机]</em> 开始接触开发, 现在主要在学习 <em>[技术方向]</em>。
+        比起 "我会用什么工具", 我更想记录 "我是怎么踩坑、怎么解决问题的" ——
+        所以这个网站更像是一本公开的学习日记, 而不是一份简历。
+      </p>
+
+      <h2>这里有什么</h2>
+      <ul>
+        <li>
+          <a href={url('/notes')}><strong>Notes</strong></a> —— 学习技术/语言时遇到的问题和解决方法(含项目相关笔记与通用笔记)
+        </li>
+        <li>
+          <a href={url('/projects')}><strong>Projects</strong></a> —— 折腾过的一些个人项目
+        </li>
+        <li>
+          <a href={url('/news')}><strong>News</strong></a> —— 平时看到的、觉得值得记一笔的资讯与个人理解
+        </li>
+      </ul>
+
+      <h2>找到我</h2>
+      <ul>
+        <li>GitHub: <a href="https://github.com/your-name">[你的 GitHub 链接]</a></li>
+        <li>Email: <a href="mailto:you@example.com">[你的邮箱]</a></li>
+      </ul>
+
+      <p class="note muted">
+        （以上为占位文案, 记得替换成你自己的背景、学习方向和联系方式。）
+      </p>
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  .about {
+    max-width: 720px;
+  }
+  .prose h1 {
+    font-size: 32px;
+    margin: 0 0 24px;
+    letter-spacing: -0.01em;
+  }
+  .prose h2 {
+    font-size: 20px;
+    margin: 36px 0 14px;
+  }
+  .prose p {
+    color: var(--text-primary);
+    line-height: 1.8;
+    margin: 0 0 18px;
+  }
+  .prose ul {
+    padding-left: 20px;
+    line-height: 1.9;
+    color: var(--text-primary);
+  }
+  .prose li {
+    margin-bottom: 6px;
+  }
+  .prose .note {
+    font-size: 13.5px;
+    border-top: 1px dashed var(--border);
+    padding-top: 20px;
+    margin-top: 36px;
+  }
+</style>

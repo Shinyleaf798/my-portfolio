@@ -1,0 +1,44 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NoteCard from '../../components/NoteCard.astro';
+import TagFilter from '../../components/TagFilter.astro';
+import { url } from '../../lib/url';
+import { tagCounts } from '../../lib/tags';
+
+const notes = (await getCollection('notes')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const allTags = tagCounts(notes);
+---
+
+<BaseLayout title="Notes" description="学习技术与语言时遇到的问题和解决方法。">
+  <div class="section container" data-filter-scope>
+    <div class="page-header">
+      <h1>Notes</h1>
+      <p>
+        学习过程中的问题与解法, 共 <span data-result-count>{notes.length}</span> 篇 ·
+        <a href={url('/notes/tags')}>按标签浏览 →</a>
+      </p>
+    </div>
+
+    <TagFilter tags={allTags} />
+
+    <div class="card-grid">
+      {
+        notes.map((n) => (
+          <NoteCard
+            id={n.id}
+            title={n.data.title}
+            date={n.data.date}
+            summary={n.data.summary}
+            category={n.data.category}
+            tags={n.data.tags}
+            type={n.data.type}
+          />
+        ))
+      }
+    </div>
+  </div>
+</BaseLayout>
