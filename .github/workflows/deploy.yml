@@ -25,16 +25,40 @@ jobs:
       - name: Checkout 网站仓库
         uses: actions/checkout@v4
 
-      # 将笔记独立仓库拉取到 src/content/notes/
+      # 确保目标目录存在并清空 (Git 不会跟踪空文件夹, 若已删除示例内容
+      # 该目录在 checkout 后可能根本不存在, 需要 mkdir -p 兜底)。
+      - name: 准备内容目录
+        run: |
+          mkdir -p src/content/notes src/content/news
+          rm -rf src/content/notes/* src/content/news/*
+
+      # 笔记仓库整体拉到临时目录, 仓库内部约定用 notes/ 和 news/ 两个子目录分类。
       # TODO: 替换 repository 为你的笔记仓库 (如 your-name/portfolio-notes)。
       # 若笔记仓库是私有的, 需配置带 repo 权限的 PAT 并在此传入 token。
       - name: Checkout 笔记仓库
         uses: actions/checkout@v4
         with:
           repository: your-name/portfolio-notes
-          path: src/content/notes
+          path: _notes-source
           # token: ${{ secrets.NOTES_REPO_TOKEN }}   # 私有仓库时取消注释
-        continue-on-error: true # 笔记仓库尚未建立时不阻塞首次构建
+
+      # 把笔记仓库的 notes/ 和 news/ 子目录分别注入网站对应的 content 目录
+      - name: 注入 notes 与 news 内容
+        run: |
+          shopt -s nullglob dotglob
+          notes_files=(_notes-source/notes/*)
+          if [ ${#notes_files[@]} -gt 0 ]; then
+            cp -r _notes-source/notes/. src/content/notes/
+          else
+            echo "警告: 笔记仓库中未找到 notes/ 目录或目录为空"
+          fi
+          news_files=(_notes-source/news/*)
+          if [ ${#news_files[@]} -gt 0 ]; then
+            cp -r _notes-source/news/. src/content/news/
+          else
+            echo "警告: 笔记仓库中未找到 news/ 目录或目录为空"
+          fi
+          rm -rf _notes-source
 
       - name: Setup Node
         uses: actions/setup-node@v4
