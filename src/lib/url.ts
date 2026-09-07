@@ -1,5 +1,6 @@
-// 拼接 base 前缀, 保证部署到 GitHub Pages 子路径时链接正确。
-const base = import.meta.env.BASE_URL; // 形如 '/' 或 '/repo/'
+// Prepends the base path so links stay correct when deployed to a
+// GitHub Pages subpath.
+const base = import.meta.env.BASE_URL; // e.g. '/' or '/repo/'
 
 export function url(path = ''): string {
   const b = base.endsWith('/') ? base.slice(0, -1) : base;

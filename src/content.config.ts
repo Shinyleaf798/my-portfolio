@@ -1,15 +1,17 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
-// Notes: 所有笔记统一存放于此集合。项目笔记 vs 通用笔记通过 `type` 区分,
-// 而非物理目录分离。构建时笔记独立仓库的 md 会被注入 src/content/notes/。
+// Notes: all notes live in this single collection. Project notes vs general
+// notes are distinguished via the `type` field, not by physical folders.
+// At build time, markdown from the separate notes repo gets injected into
+// src/content/notes/.
 const notes = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/notes' }),
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
     type: z.enum(['project', 'general']).default('general'),
-    // 当 type 为 project 时, 填写关联项目的 slug
+    // When type is "project", fill in the related project's slug
     relatedProject: z.string().optional(),
     category: z.string(),
     tags: z.array(z.string()).default([]),

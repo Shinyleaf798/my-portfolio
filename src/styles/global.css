@@ -1,7 +1,7 @@
 /* ============================================================
-   设计 Token — 与 portfolio-handoff.md 第 6 节保持一致
+   Design tokens — matches portfolio-handoff.md section 6
    ============================================================ */
-/* ---------- 默认: 深色主题 ---------- */
+/* ---------- Default: dark theme ---------- */
 :root {
   --bg-deep: #0d1117;
   --bg-alt: #161b2e;
@@ -10,9 +10,9 @@
   --accent-dim: #2dd4bf33;
   --accent-soft: #2dd4bf1a;
   --accent-hover: #5eead4;
-  --accent-ink: #0d1117; /* 放在 accent 底色上的文字色 */
+  --accent-ink: #0d1117; /* text color placed on top of the accent fill */
 
-  /* 背景氛围用色 (仅用于极淡的辉光/渐变) */
+  /* Background atmosphere colors (only used for very faint glows/gradients) */
   --glow-teal: #2dd4bf;
   --glow-indigo: #6366f1;
 
@@ -21,7 +21,8 @@
   --border: #21262d;
   --border-hover: #2dd4bf;
 
-  /* 表面/层级色 —— 供卡片、标签、代码、导航等复用, 主题切换只改这里 */
+  /* Surface/elevation colors — reused by cards, tags, code, nav, etc.
+     Theme switching only needs to touch these. */
   --surface: #ffffff05;
   --surface-2: #ffffff08;
   --surface-3: #ffffff0d;
@@ -43,12 +44,12 @@
   --nav-h: 64px;
 }
 
-/* ---------- 亮色主题 (参考浅色阅读页配色) ---------- */
+/* ---------- Light theme (based on a soft reading-page palette) ---------- */
 :root[data-theme='light'] {
   --bg-deep: #eef3ee;
   --bg-alt: #f6f4ee;
 
-  --accent: #0d9488; /* teal-600, 在白底上对比更足 */
+  --accent: #0d9488; /* teal-600, stronger contrast on white */
   --accent-dim: #0d948840;
   --accent-soft: #0d948814;
   --accent-hover: #0f766e;
@@ -92,7 +93,8 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* sticky footer: 撑满视口, 主内容区伸展, footer 始终贴底 */
+  /* sticky footer: fill the viewport, let main content stretch,
+     so the footer always sits at the bottom */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -102,7 +104,7 @@ main {
   flex: 1 0 auto;
 }
 
-/* ---------- 背景氛围: 固定的柔和辉光, 让深色不再纯平 ---------- */
+/* ---------- Background atmosphere: fixed soft glow so dark mode isn't flat ---------- */
 body::before {
   content: '';
   position: fixed;
@@ -115,7 +117,7 @@ body::before {
     radial-gradient(900px circle at 50% 120%, color-mix(in srgb, var(--glow-teal) 7%, transparent), transparent 60%);
 }
 
-/* ---------- 背景氛围: 极淡网格, 向下渐隐避免干扰正文 ---------- */
+/* ---------- Background atmosphere: very faint grid, fades downward so it doesn't interfere with content ---------- */
 body::after {
   content: '';
   position: fixed;
@@ -130,7 +132,7 @@ body::after {
   mask-image: radial-gradient(circle at 50% 0%, #000, transparent 72%);
 }
 
-/* 亮色: 换成柔和的浅色渐变 + 更淡的深色网格 */
+/* Light theme: swap for a soft light gradient + a fainter dark grid */
 :root[data-theme='light'] body::before {
   background:
     radial-gradient(760px circle at 8% -10%, #cdefd8, transparent 55%),
@@ -157,7 +159,7 @@ img {
   height: auto;
 }
 
-/* ---------- 布局容器 ---------- */
+/* ---------- Layout container ---------- */
 .container {
   width: 100%;
   max-width: var(--maxw);
@@ -205,7 +207,7 @@ img {
   color: var(--accent);
 }
 
-/* ---------- 卡片 ---------- */
+/* ---------- Cards ---------- */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -252,7 +254,7 @@ img {
   flex: 1;
 }
 
-/* ---------- 标签 chip ---------- */
+/* ---------- Tag chips ---------- */
 .tag {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -291,7 +293,7 @@ img {
   border-radius: var(--radius-sm);
 }
 
-/* ---------- 按钮 ---------- */
+/* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -312,7 +314,7 @@ img {
   box-shadow: 0 0 16px var(--accent-dim);
 }
 
-/* ---------- 工具类 ---------- */
+/* ---------- Utility classes ---------- */
 .muted {
   color: var(--text-muted);
 }
@@ -320,7 +322,8 @@ img {
   font-family: var(--font-mono);
 }
 
-/* 主题切换按钮: 深色时显示月亮(点击去亮色), 亮色时显示太阳 */
+/* Theme toggle button: shows a moon in dark mode (click to go light),
+   shows a sun in light mode */
 .theme-icon-sun {
   display: none;
 }
@@ -350,7 +353,7 @@ img {
   border: 0;
 }
 
-/* ---------- Markdown 正文排版 ---------- */
+/* ---------- Markdown body typography ---------- */
 .markdown {
   font-size: 16px;
   line-height: 1.8;
@@ -398,7 +401,7 @@ img {
 .markdown blockquote p {
   margin: 6px 0;
 }
-/* 行内代码 */
+/* Inline code */
 .markdown :not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.88em;
@@ -407,7 +410,7 @@ img {
   border-radius: 4px;
   padding: 1px 6px;
 }
-/* Shiki 代码块 */
+/* Shiki code blocks */
 .markdown pre {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -429,12 +432,12 @@ img {
   border-top: 1px solid var(--border);
   margin: 32px 0;
 }
-/* 标题锚点定位 (被 sticky nav 遮挡时留出空间) */
+/* Heading anchor offset (leaves room so the sticky nav doesn't cover it) */
 .markdown :is(h2, h3) {
   scroll-margin-top: calc(var(--nav-h) + 16px);
 }
 
-/* ---------- 文章详情页布局 (正文 + 右侧 TOC) ---------- */
+/* ---------- Article detail layout (body + right-side TOC) ---------- */
 .article-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;

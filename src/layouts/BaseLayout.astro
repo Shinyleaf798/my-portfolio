@@ -21,7 +21,7 @@ const fullTitle = title ? `${title} · learning.log` : 'learning.log';
     <meta name="generator" content={Astro.generator} />
     <title>{fullTitle}</title>
 
-    {/* 主题初始化: 在渲染前设置, 避免刷新时闪一下。默认深色, 记住用户选择。 */}
+    {/* Theme init: set before render to avoid a flash on refresh. Defaults to dark, remembers the user's choice. */}
     <script is:inline>
       (function () {
         try {

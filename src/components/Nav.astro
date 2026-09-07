@@ -9,7 +9,7 @@ const links = [
   { href: url('/about'), label: 'About' },
 ];
 
-// 当前路径, 用于高亮激活项
+// Current path, used to highlight the active nav item
 const current = Astro.url.pathname.replace(/\/$/, '') || '/';
 function isActive(href: string) {
   const h = href.replace(/\/$/, '') || '/';
@@ -57,7 +57,7 @@ function isActive(href: string) {
     transition: background 0.3s ease, border-color 0.3s ease,
       backdrop-filter 0.3s ease, box-shadow 0.3s ease;
   }
-  /* 滚动后 "浮起来" 的态 */
+  /* "Lifted" state once the page is scrolled */
   .nav.scrolled {
     background: var(--nav-bg);
     backdrop-filter: blur(12px);
@@ -70,7 +70,8 @@ function isActive(href: string) {
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    /* 比正文容器(1080)略宽, 居中 —— logo/菜单向左右各扩展一些 */
+    /* Slightly wider than the content container (1080), centered —
+       logo/menu get a bit more breathing room on each side */
     max-width: 1280px;
     margin: 0 auto;
     padding: 0 24px;
@@ -190,7 +191,7 @@ function isActive(href: string) {
 </style>
 
 <script>
-  // 顶部导航栏: 滚动响应式 (scrolled 态) + 移动端展开
+  // Top nav: scroll-responsive (scrolled state) + mobile menu toggle
   const nav = document.getElementById('site-nav');
   const toggle = document.getElementById('nav-toggle');
   const links = document.getElementById('nav-links');
@@ -207,7 +208,7 @@ function isActive(href: string) {
     toggle.setAttribute('aria-expanded', String(!!open));
   });
 
-  // 深色 / 浅色主题切换 (记住选择, 默认深色)
+  // Dark / light theme toggle (remembers choice, defaults to dark)
   const themeToggle = document.getElementById('theme-toggle');
   themeToggle?.addEventListener('click', () => {
     const isLight =

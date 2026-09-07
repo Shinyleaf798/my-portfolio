@@ -33,7 +33,7 @@ const { id, title, date, summary, tags, featured } = Astro.props;
   .card:hover h3 {
     color: var(--accent);
   }
-  /* 卡片内的 tag 仅作展示, 不响应点击态 */
+  /* Tags inside a card are display-only, no interactive click state */
   .tag[data-static] {
     cursor: default;
   }

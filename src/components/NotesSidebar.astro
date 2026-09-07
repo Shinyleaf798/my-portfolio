@@ -7,7 +7,8 @@ interface Props {
 }
 const { currentId } = Astro.props;
 
-// 所有笔记按 category 分组, 组内按日期倒序 —— 作为左侧文档导航
+// All notes grouped by category, newest-first within each group —
+// used as the left-hand docs navigation
 const notes = (await getCollection('notes')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
 );

@@ -14,7 +14,7 @@ export async function getStaticPaths() {
 const { note } = Astro.props;
 const { Content, headings } = await render(note);
 
-// 关联项目 (若为项目笔记)
+// Related project (only set if this is a project note)
 let relatedProject = null;
 if (note.data.type === 'project' && note.data.relatedProject) {
   relatedProject = await getEntry('projects', note.data.relatedProject);
@@ -77,7 +77,7 @@ if (note.data.type === 'project' && note.data.relatedProject) {
     margin: 0 0 16px;
   }
 
-  /* 文档三栏布局: 左侧导航 + 正文 + 右侧目录 */
+  /* Three-column docs layout: left nav + body + right-side TOC */
   .docs-container {
     width: 100%;
     max-width: 1320px;
@@ -98,7 +98,7 @@ if (note.data.type === 'project' && note.data.relatedProject) {
   .article-toc {
     position: relative;
   }
-  /* 窄屏: 先收起右侧目录, 再收起左侧导航 */
+  /* Narrow screens: collapse the right-side TOC first, then the left nav */
   @media (max-width: 1100px) {
     .docs-layout {
       grid-template-columns: 240px minmax(0, 1fr);

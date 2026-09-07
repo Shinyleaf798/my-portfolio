@@ -12,7 +12,7 @@ export async function getStaticPaths() {
 const { item } = Astro.props;
 const { Content } = await render(item);
 
-// 关联笔记 (可选)
+// Related notes (optional)
 const relatedNotes = [];
 for (const slug of item.data.relatedNotes ?? []) {
   const note = await getEntry('notes', slug);

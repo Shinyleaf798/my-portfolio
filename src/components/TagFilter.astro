@@ -1,8 +1,8 @@
 ---
 interface Props {
-  // 已按频次降序排好的标签
+  // Tags already sorted by frequency descending
   tags: { tag: string; count: number }[];
-  // 超过这个数量的标签折叠进 "更多"
+  // Tags beyond this count collapse into "More"
   collapseAfter?: number;
 }
 const { tags, collapseAfter = 12 } = Astro.props;
@@ -47,8 +47,9 @@ const hiddenCount = Math.max(0, tags.length - collapseAfter);
     align-items: center;
     gap: 6px;
   }
-  /* 选中态: 提高作用域内优先级, 否则会被 background:none 盖掉,
-     导致深色字落在深色背景上而 "消失" */
+  /* Active state: needs higher specificity within this scope, otherwise it
+     gets overridden by background:none, causing dark text on a dark
+     background to "disappear" */
   .tag-filter .tag.is-active {
     background: var(--accent);
     color: var(--accent-ink);
@@ -80,8 +81,10 @@ const hiddenCount = Math.max(0, tags.length - collapseAfter);
 </style>
 
 <script>
-  // 纯前端标签筛选: 点击标签即时过滤当前列表, 不跳转新页面。
-  // 支持通过 URL ?tag=xxx 预选, 方便 /notes/tags 快速跳转入口。
+  // Client-side tag filtering: clicking a tag instantly filters the current
+  // list without navigating to a new page.
+  // Supports preselecting via ?tag=xxx in the URL, for quick links from
+  // /notes/tags.
   function initScope(scope: HTMLElement) {
     const filter = scope.querySelector<HTMLElement>('.tag-filter');
     if (!filter) return;
@@ -123,13 +126,13 @@ const hiddenCount = Math.max(0, tags.length - collapseAfter);
 
     moreBtn?.addEventListener('click', expand);
 
-    // 初始: 读取 URL 中的 ?tag=
+    // Initial state: read ?tag= from the URL
     const preset = new URL(window.location.href).searchParams.get('tag');
     const presetBtn = preset
       ? buttons.find((b) => b.dataset.filter === preset)
       : null;
     if (presetBtn) {
-      if (presetBtn.classList.contains('is-collapsed')) expand(); // 被折叠时展开露出
+      if (presetBtn.classList.contains('is-collapsed')) expand(); // reveal it if collapsed
       apply(preset!);
     } else {
       apply('*');

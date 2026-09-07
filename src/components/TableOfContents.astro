@@ -8,7 +8,7 @@ interface Props {
   headings: Heading[];
 }
 const { headings } = Astro.props;
-// 只取 H2 / H3 构建目录
+// Only H2/H3 headings are included in the table of contents
 const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 ---
 
@@ -73,7 +73,7 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 </style>
 
 <script>
-  // 滚动监听: 高亮当前正在阅读的章节对应的目录项
+  // Scroll spy: highlights the TOC entry for the section currently in view
   const links = Array.from(
     document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')
   );

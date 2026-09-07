@@ -15,7 +15,7 @@ export async function getStaticPaths() {
 const { project } = Astro.props;
 const { Content } = await render(project);
 
-// 自动聚合关联到本项目的所有笔记 (无需手动维护列表)
+// Automatically aggregates every note linked to this project (no manual list to maintain)
 const relatedNotes = (await getCollection('notes'))
   .filter((n) => n.data.relatedProject === project.id)
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());

@@ -1,5 +1,6 @@
-// 统计标签频次, 按 "出现次数降序 → 字母序" 排序。
-// 频次优先: 最常用的标签排前面, 比纯字母序更实用。
+// Counts tag frequency, sorted by "count descending → alphabetical".
+// Frequency first: the most-used tags come first, which is more useful
+// than plain alphabetical order.
 export function tagCounts<T extends { data: { tags: string[] } }>(
   items: T[]
 ): { tag: string; count: number }[] {

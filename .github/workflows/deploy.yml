@@ -1,10 +1,10 @@
 name: Build and Deploy
 
 on:
-  # 手动触发 (在 Actions 页面点 "Run workflow")。
-  # 笔记独立仓库更新后, 来这里手动触发重新构建。
+  # Manual trigger (click "Run workflow" on the Actions page).
+  # Use this after pushing new content to the notes repo.
   workflow_dispatch:
-  # 本仓库(网站代码)有更新时也自动构建
+  # Also build automatically when this repo (site code) is updated.
   push:
     branches: [main]
 
@@ -13,7 +13,7 @@ permissions:
   pages: write
   id-token: write
 
-# 同一时间只跑一个部署
+# Only one deployment at a time
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -22,42 +22,46 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 网站仓库
+      - name: Checkout site repo
         uses: actions/checkout@v4
 
-      # 确保目标目录存在并清空 (Git 不会跟踪空文件夹, 若已删除示例内容
-      # 该目录在 checkout 后可能根本不存在, 需要 mkdir -p 兜底)。
-      - name: 准备内容目录
+      # Ensure target directories exist and are empty (Git doesn't track empty
+      # folders, so if sample content was deleted, the folder may not exist
+      # at all after checkout — mkdir -p covers that).
+      - name: Prepare content directories
         run: |
           mkdir -p src/content/notes src/content/news
           rm -rf src/content/notes/* src/content/news/*
 
-      # 笔记仓库整体拉到临时目录, 仓库内部约定用 notes/ 和 news/ 两个子目录分类。
-      # continue-on-error: 笔记仓库目前还是空仓库(无任何提交), checkout 会失败;
-      # 允许这步失败不阻塞网站本身的构建部署, 等笔记仓库有内容后会自动被拉取到。
-      - name: Checkout 笔记仓库
+      # Pull the whole notes repo into a temp dir. It's organized internally
+      # with notes/ and news/ subfolders.
+      # continue-on-error: kept as a long-term safety net — if the notes repo
+      # is ever renamed/deleted/temporarily unreachable, that shouldn't also
+      # fail deployment of the site itself (About/Projects etc).
+      - name: Checkout notes repo
         uses: actions/checkout@v4
         continue-on-error: true
         with:
           repository: Shinyleaf798/my-note
           path: _notes-source
-          # token: ${{ secrets.NOTES_REPO_TOKEN }}   # 私有仓库时取消注释
+          # token: ${{ secrets.NOTES_REPO_TOKEN }}   # uncomment if private
 
-      # 把笔记仓库的 notes/ 和 news/ 子目录分别注入网站对应的 content 目录
-      - name: 注入 notes 与 news 内容
+      # Inject the notes repo's notes/ and news/ subfolders into the
+      # matching content directories on the site.
+      - name: Inject notes and news content
         run: |
           shopt -s nullglob dotglob
           notes_files=(_notes-source/notes/*)
           if [ ${#notes_files[@]} -gt 0 ]; then
             cp -r _notes-source/notes/. src/content/notes/
           else
-            echo "警告: 笔记仓库中未找到 notes/ 目录或目录为空"
+            echo "Warning: no notes/ directory found (or empty) in notes repo"
           fi
           news_files=(_notes-source/news/*)
           if [ ${#news_files[@]} -gt 0 ]; then
             cp -r _notes-source/news/. src/content/news/
           else
-            echo "警告: 笔记仓库中未找到 news/ 目录或目录为空"
+            echo "Warning: no news/ directory found (or empty) in notes repo"
           fi
           rm -rf _notes-source
 
@@ -70,7 +74,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build (Astro + Pagefind 索引)
+      - name: Build (Astro + Pagefind index)
         run: npm run build
 
       - name: Upload Pages artifact

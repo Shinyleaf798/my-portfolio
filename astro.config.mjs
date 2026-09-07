@@ -7,7 +7,7 @@ export default defineConfig({
   base: '/my-portfolio/',
 
   markdown: {
-    // Shiki 代码高亮, 匹配深色主题
+    // Shiki code highlighting, matched to the dark theme
     shikiConfig: {
       theme: 'github-dark',
       wrap: true,
