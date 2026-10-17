@@ -1,6 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
 
+interface Props {
+  /** Scroll speed in pixels per second. Higher = faster. */
+  speed?: number;
+}
+const { speed = 60 } = Astro.props;
+
 // Topics for the scrolling marquee: pulled from real note categories and tags
 const notes = await getCollection('notes');
 const topicSet = new Set<string>();
@@ -12,16 +18,36 @@ let topics = [...topicSet];
 if (topics.length === 0) {
   topics = ['Python', 'Rust', '日语', '前端', 'Astro', '学习笔记'];
 }
+
+// Rough width of one item in px, used to repeat the list until it is long
+// enough to fill a wide screen. Keeps the loop seamless even without JS.
+const estimateWidth = (text: string) => {
+  let w = 44 + 15 + 22; // padding + spark + gap
+  for (const ch of text) w += /[　-鿿＀-￯]/.test(ch) ? 15 : 9;
+  return w;
+};
+const setWidth = topics.reduce((sum, t) => sum + estimateWidth(t), 0);
+const repeat = Math.max(1, Math.ceil(2000 / Math.max(setWidth, 1)));
+const items = Array.from({ length: repeat }, () => topics).flat();
 ---
 
 <div class="marquee-wrap" aria-hidden="true">
   <div class="marquee-band">
-    <div class="marquee-track">
-      {[...topics, ...topics].map((t) => (
-        <span class="marquee-item">
-          <span class="spark">✦</span>{t}
-        </span>
-      ))}
+    <div class="marquee-track" data-speed={speed}>
+      <div class="marquee-group">
+        {items.map((t) => (
+          <span class="marquee-item">
+            <span class="spark">✦</span>{t}
+          </span>
+        ))}
+      </div>
+      <div class="marquee-group">
+        {items.map((t) => (
+          <span class="marquee-item">
+            <span class="spark">✦</span>{t}
+          </span>
+        ))}
+      </div>
     </div>
   </div>
 </div>
@@ -54,10 +80,16 @@ if (topics.length === 0) {
   .marquee-track {
     display: flex;
     align-items: center;
-    gap: 0;
     width: max-content;
     line-height: 1;
-    animation: marquee 32s linear infinite;
+    /* --shift is the width of one group; the script measures it.
+       Fallback 50% works when the track is exactly two groups. */
+    animation: marquee var(--marquee-duration, 32s) linear infinite;
+  }
+  .marquee-group {
+    display: flex;
+    align-items: center;
+    flex: none;
   }
   .marquee-item {
     display: inline-flex;
@@ -79,7 +111,7 @@ if (topics.length === 0) {
       transform: translateX(0);
     }
     to {
-      transform: translateX(-50%);
+      transform: translateX(calc(-1 * var(--shift, 50%)));
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -88,3 +120,41 @@ if (topics.length === 0) {
     }
   }
 </style>
+
+<script>
+  // Clone groups until the track is wider than the band, then derive the
+  // animation duration from a constant pixel-per-second speed.
+  const setup = (track: HTMLElement) => {
+    const band = track.parentElement as HTMLElement;
+    const first = track.firstElementChild as HTMLElement;
+    if (!first) return;
+
+    // Drop extra clones from a previous run, keep the two original groups.
+    while (track.children.length > 2) track.lastElementChild!.remove();
+
+    const groupWidth = first.getBoundingClientRect().width;
+    if (groupWidth === 0) return;
+
+    // Need at least one group beyond what the band shows at once.
+    const needed = Math.max(2, Math.ceil(band.offsetWidth / groupWidth) + 1);
+    while (track.children.length < needed) {
+      track.appendChild(first.cloneNode(true));
+    }
+
+    const speed = Number(track.dataset.speed) || 60;
+    track.style.setProperty('--shift', `${groupWidth}px`);
+    track.style.setProperty('--marquee-duration', `${groupWidth / speed}s`);
+  };
+
+  const init = () => {
+    document.querySelectorAll<HTMLElement>('.marquee-track').forEach(setup);
+  };
+
+  init();
+  if (document.fonts) document.fonts.ready.then(init);
+  let t: number;
+  window.addEventListener('resize', () => {
+    clearTimeout(t);
+    t = window.setTimeout(init, 200);
+  });
+</script>
