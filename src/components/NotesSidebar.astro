@@ -7,19 +7,29 @@ interface Props {
 }
 const { currentId } = Astro.props;
 
-// All notes grouped by category, newest-first within each group —
-// used as the left-hand docs navigation
+// All notes grouped for the left-hand docs navigation, newest-first
+// within each group.
+//
+// A note is listed under every domain it declares, so one that spans
+// 前端 and 后端 is reachable from both — the sidebar is for finding
+// things, and a cross-cutting note is findable from either side.
+// Notes without domains fall back to their category.
 const notes = (await getCollection('notes')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
 );
 
 const groups = new Map<string, typeof notes>();
 for (const n of notes) {
-  if (!groups.has(n.data.category)) groups.set(n.data.category, []);
-  groups.get(n.data.category)!.push(n);
+  const labels = n.data.domains.length > 0 ? n.data.domains : [n.data.category];
+  for (const label of labels) {
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(n);
+  }
 }
-const categories = [...groups.entries()].sort((a, b) =>
-  a[0].localeCompare(b[0])
+// Biggest groups first, then alphabetical — the long lists are the ones
+// worth scrolling to
+const categories = [...groups.entries()].sort(
+  (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0])
 );
 ---
 
@@ -85,8 +95,8 @@ const categories = [...groups.entries()].sort((a, b) =>
     color: var(--text-primary);
   }
   .ns-link.active {
-    color: var(--accent);
-    border-left-color: var(--accent);
+    color: var(--hue, var(--accent));
+    border-left-color: var(--hue, var(--accent));
     font-weight: 500;
   }
 </style>

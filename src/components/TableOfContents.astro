@@ -67,8 +67,8 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
     color: var(--text-primary);
   }
   .toc-item a.active {
-    color: var(--accent);
-    border-left-color: var(--accent);
+    color: var(--hue, var(--accent));
+    border-left-color: var(--hue, var(--accent));
   }
 </style>
 

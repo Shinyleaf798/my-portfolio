@@ -1,0 +1,52 @@
+---
+import { url } from '../lib/url';
+import { formatDate } from '../lib/format';
+
+interface Props {
+  id: string;
+  title: string;
+  date: Date;
+  summary: string;
+  category: string;
+  tags: string[];
+  type: 'project' | 'general';
+  // Title of the project this note belongs to, when it is a project note
+  projectTitle?: string;
+}
+
+const { id, title, date, summary, category, tags, type, projectTitle } =
+  Astro.props;
+
+// Split so the day leads and the year sits quietly behind it
+const d = formatDate(date);
+const [year, rest] = [d.slice(0, 4), d.slice(5)];
+---
+
+<a class="row" href={url(`/notes/${id}`)} data-tags={tags.join(',')} data-category={category}>
+  <div class="row-when">
+    <b>{rest}</b>{year}
+    {type === 'project' && <span class="row-kind">项目笔记</span>}
+  </div>
+  <div>
+    <h3 class="row-title">{title}</h3>
+    <p class="row-summary">{summary}</p>
+    <div class="row-meta">
+      {/* Skip it when the category is already one of the tags below —
+          derived categories come from `domains`, which tags include */}
+      {!tags.includes(category) && <span class="badge">{category}</span>}
+      {tags.map((t) => <span class="tag" data-static>{t}</span>)}
+      {projectTitle && (
+        <span>
+          关联 <span class="to-projects">{projectTitle}</span>
+        </span>
+      )}
+    </div>
+  </div>
+</a>
+
+<style>
+  /* Tags inside an entry are display-only, no interactive click state */
+  .tag[data-static] {
+    cursor: default;
+  }
+</style>

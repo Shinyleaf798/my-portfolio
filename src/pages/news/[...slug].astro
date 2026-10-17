@@ -20,7 +20,7 @@ for (const slug of item.data.relatedNotes ?? []) {
 }
 ---
 
-<BaseLayout title={item.data.title} description={item.data.summary}>
+<BaseLayout title={item.data.title} description={item.data.summary} hue="news">
   <div class="section container">
     <a class="back-link" href={url('/news')}>← 返回 News</a>
 
@@ -51,11 +51,11 @@ for (const slug of item.data.relatedNotes ?? []) {
       {
         relatedNotes.length > 0 && (
           <section class="related-notes" data-pagefind-ignore>
-            <h2 class="rn-title">相关笔记</h2>
+            <h2 class="rn-title">由此写下的笔记</h2>
             <ul>
               {relatedNotes.map((n) => (
                 <li>
-                  <a href={url(`/notes/${n.id}`)}>{n.data.title}</a>
+                  <a class="to-notes" href={url(`/notes/${n.id}`)}>{n.data.title}</a>
                 </li>
               ))}
             </ul>
@@ -84,6 +84,7 @@ for (const slug of item.data.relatedNotes ?? []) {
   .rn-title {
     font-size: 18px;
     margin: 0 0 14px;
+    color: var(--hue, var(--accent));
   }
   .related-notes ul {
     list-style: none;

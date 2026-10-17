@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { url } from '../lib/url';
 ---
 
-<BaseLayout title="About" description="关于我 —— 一本公开的学习日记背后的人。">
+<BaseLayout title="About" description="关于我 —— 一本公开的学习日记背后的人。" hue="projects">
   <div class="section container about">
     <article class="prose">
       <h1>关于我</h1>
@@ -14,28 +14,37 @@ import { url } from '../lib/url';
 
       <p>
         我从 <em>[某个契机]</em> 开始接触开发, 现在主要在学习 <em>[技术方向]</em>。
-        比起 "我会用什么工具", 我更想记录 "我是怎么踩坑、怎么解决问题的" ——
-        所以这个网站更像是一本公开的学习日记, 而不是一份简历。
+        比起罗列 "我会用什么工具", 我更想把 "我是怎么踩坑、怎么解决问题的" 留下来 ——
+        所以这站上每个项目后面都挂着当时写的笔记, 那才是能说明问题的部分。
       </p>
 
       <h2>这里有什么</h2>
-      <ul>
-        <li>
-          <a href={url('/notes')}><strong>Notes</strong></a> —— 学习技术/语言时遇到的问题和解决方法(含项目相关笔记与通用笔记)
-        </li>
-        <li>
-          <a href={url('/projects')}><strong>Projects</strong></a> —— 折腾过的一些个人项目
-        </li>
-        <li>
-          <a href={url('/news')}><strong>News</strong></a> —— 平时看到的、觉得值得记一笔的资讯与个人理解
-        </li>
-      </ul>
+      <div class="pills">
+        <a class="pill hue-projects" href={url('/projects')}>
+          <div class="pill-title">Projects</div>
+          <div class="pill-value">折腾过的个人项目, 附开发时写的笔记</div>
+        </a>
+        <a class="pill hue-notes" href={url('/notes')}>
+          <div class="pill-title">Notes</div>
+          <div class="pill-value">学技术和语言时遇到的问题与解法</div>
+        </a>
+        <a class="pill hue-news" href={url('/news')}>
+          <div class="pill-title">News</div>
+          <div class="pill-value">看到的资讯, 加上自己的理解</div>
+        </a>
+      </div>
 
-      <h2>找到我</h2>
-      <ul>
-        <li>GitHub: <a href="https://github.com/your-name">[你的 GitHub 链接]</a></li>
-        <li>Email: <a href="mailto:you@example.com">[你的邮箱]</a></li>
-      </ul>
+      <h2>找我</h2>
+      <div class="pills">
+        <a class="pill" href="https://github.com/your-name">
+          <div class="pill-title">GitHub</div>
+          <div class="pill-value">[你的 GitHub 链接]</div>
+        </a>
+        <a class="pill" href="mailto:you@example.com">
+          <div class="pill-title">Email</div>
+          <div class="pill-value">[你的邮箱]</div>
+        </a>
+      </div>
 
       <p class="note muted">
         （以上为占位文案, 记得替换成你自己的背景、学习方向和联系方式。）
@@ -55,25 +64,17 @@ import { url } from '../lib/url';
   }
   .prose h2 {
     font-size: 20px;
-    margin: 36px 0 14px;
+    margin: 40px 0 16px;
   }
   .prose p {
     color: var(--text-primary);
     line-height: 1.8;
     margin: 0 0 18px;
   }
-  .prose ul {
-    padding-left: 20px;
-    line-height: 1.9;
-    color: var(--text-primary);
-  }
-  .prose li {
-    margin-bottom: 6px;
-  }
   .prose .note {
     font-size: 13.5px;
     border-top: 1px dashed var(--border);
     padding-top: 20px;
-    margin-top: 36px;
+    margin-top: 40px;
   }
 </style>

@@ -9,20 +9,23 @@ interface Props {
   summary: string;
   tags: string[];
   featured?: boolean;
+  // How many notes were written while building this
+  noteCount?: number;
 }
 
-const { id, title, date, summary, tags, featured } = Astro.props;
+const { id, title, date, summary, tags, noteCount = 0 } = Astro.props;
+
+const d = formatDate(date);
+const [year, month] = [d.slice(0, 4), d.slice(5, 7)];
 ---
 
 <a class="card" href={url(`/projects/${id}`)} data-tags={tags.join(',')}>
-  <div class="meta">
-    <span>{formatDate(date)}</span>
-    {featured && <span class="badge">featured</span>}
-  </div>
+  <span class="when">{year} / {month}</span>
   <h3>{title}</h3>
   <p class="summary">{summary}</p>
-  <div class="tag-row">
+  <div class="row-meta">
     {tags.map((t) => <span class="tag" data-static>{t}</span>)}
+    {noteCount > 0 && <span class="notes">{noteCount} 篇笔记</span>}
   </div>
 </a>
 
@@ -31,7 +34,16 @@ const { id, title, date, summary, tags, featured } = Astro.props;
     color: inherit;
   }
   .card:hover h3 {
-    color: var(--accent);
+    color: var(--hue, var(--accent));
+  }
+  .when {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--hue, var(--accent));
+    margin-bottom: 9px;
+  }
+  .notes {
+    color: var(--hue, var(--accent));
   }
   /* Tags inside a card are display-only, no interactive click state */
   .tag[data-static] {

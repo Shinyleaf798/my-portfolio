@@ -3,23 +3,29 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
 import TagFilter from '../../components/TagFilter.astro';
-import { tagCounts } from '../../lib/tags';
+import { allTags } from '../../lib/tags';
+import { facetGroups } from '../../lib/tagGroups';
+import { notesByProject } from '../../lib/related';
 
 const projects = (await getCollection('projects')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
 );
 
-const allTags = tagCounts(projects);
+const groups = facetGroups(projects);
+const trails = await notesByProject();
 ---
 
-<BaseLayout title="Projects" description="折腾过的一些个人项目。">
+<BaseLayout title="Projects" description="折腾过的一些个人项目。" hue="projects">
   <div class="section container" data-filter-scope>
     <div class="page-header">
       <h1>Projects</h1>
-      <p>折腾过的一些个人项目 —— <span data-result-count>{projects.length}</span> 个。</p>
+      <p>
+        折腾过的一些个人项目 —— <span class="count" data-result-count>{projects.length}</span> 个,
+        每个后面都挂着当时写的笔记。
+      </p>
     </div>
 
-    <TagFilter tags={allTags} />
+    <TagFilter groups={groups} />
 
     <div class="card-grid">
       {
@@ -29,8 +35,9 @@ const allTags = tagCounts(projects);
             title={p.data.title}
             date={p.data.date}
             summary={p.data.summary}
-            tags={p.data.tags}
+            tags={allTags(p.data)}
             featured={p.data.featured}
+            noteCount={(trails.get(p.id) ?? []).length}
           />
         ))
       }

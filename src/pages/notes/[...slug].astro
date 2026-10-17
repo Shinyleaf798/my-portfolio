@@ -21,7 +21,7 @@ if (note.data.type === 'project' && note.data.relatedProject) {
 }
 ---
 
-<BaseLayout title={note.data.title} description={note.data.summary}>
+<BaseLayout title={note.data.title} description={note.data.summary} hue="notes">
   <div class="section docs-container">
     <div class="docs-layout">
       <aside class="docs-nav" data-pagefind-ignore>
@@ -44,7 +44,7 @@ if (note.data.type === 'project' && note.data.relatedProject) {
             relatedProject && (
               <p class="related">
                 关联项目:
-                <a href={url(`/projects/${relatedProject.id}`)}>
+                <a class="to-projects" href={url(`/projects/${relatedProject.id}`)}>
                   {relatedProject.data.title}
                 </a>
               </p>

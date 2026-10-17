@@ -6,9 +6,15 @@ import Footer from '../components/Footer.astro';
 interface Props {
   title: string;
   description?: string;
+  // Section color for this page; everything inside reads it as --hue
+  hue?: 'projects' | 'notes' | 'news';
 }
 
-const { title, description = '一本公开的学习日记 — 笔记、项目与资讯。' } = Astro.props;
+const {
+  title,
+  description = '一本公开的学习日记 — 笔记、项目与资讯。',
+  hue,
+} = Astro.props;
 const fullTitle = title ? `${title} · learning.log` : 'learning.log';
 ---
 
@@ -40,7 +46,7 @@ const fullTitle = title ? `${title} · learning.log` : 'learning.log';
       rel="stylesheet"
     />
   </head>
-  <body>
+  <body class:list={[hue && `hue-${hue}`]}>
     <Nav />
     <main>
       <slot />

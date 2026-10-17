@@ -1,37 +1,45 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import NewsCard from '../../components/NewsCard.astro';
+import NewsEntry from '../../components/NewsEntry.astro';
 import TagFilter from '../../components/TagFilter.astro';
-import { tagCounts } from '../../lib/tags';
+import { allTags } from '../../lib/tags';
+import { facetGroups } from '../../lib/tagGroups';
+import { noteTitles } from '../../lib/related';
 
 const news = (await getCollection('news')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
 );
 
-const allTags = tagCounts(news);
+const groups = facetGroups(news);
+const noteTitle = await noteTitles();
 ---
 
-<BaseLayout title="News" description="平时看到的、觉得值得记一笔的资讯与个人理解。">
+<BaseLayout title="News" description="平时看到的、觉得值得记一笔的资讯与个人理解。" hue="news">
   <div class="section container" data-filter-scope>
     <div class="page-header">
       <h1>News</h1>
       <p>
-        看到的资讯 + 自己的解读, 共 <span data-result-count>{news.length}</span> 条。
+        看到的资讯 + 自己的解读, 共 <span class="count" data-result-count>{news.length}</span> 条。
+        只记和手上的东西有关的。
       </p>
     </div>
 
-    <TagFilter tags={allTags} />
+    <TagFilter groups={groups} />
 
-    <div class="card-grid">
+    <div class="rows">
       {
         news.map((n) => (
-          <NewsCard
+          <NewsEntry
             id={n.id}
             title={n.data.title}
             date={n.data.date}
             summary={n.data.summary}
-            tags={n.data.tags}
+            tags={allTags(n.data)}
+            sourceUrl={n.data.sourceUrl}
+            relatedNoteTitles={(n.data.relatedNotes ?? [])
+              .map((id) => noteTitle.get(id))
+              .filter((t): t is string => !!t)}
           />
         ))
       }

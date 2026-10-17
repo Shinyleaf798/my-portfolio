@@ -91,7 +91,7 @@ function isActive(href: string) {
     width: 9px;
     height: 9px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--hue, var(--accent));
     box-shadow: 0 0 10px var(--accent);
   }
   .nav-links {
@@ -111,7 +111,7 @@ function isActive(href: string) {
     background: var(--nav-hover);
   }
   .nav-link.active {
-    color: var(--accent);
+    color: var(--hue, var(--accent));
   }
   .nav-search {
     font-size: 14px;
@@ -134,8 +134,8 @@ function isActive(href: string) {
     transition: border-color 0.2s ease, color 0.2s ease;
   }
   .nav-theme:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--hue, var(--accent));
+    color: var(--hue, var(--accent));
   }
   .nav-toggle {
     display: none;

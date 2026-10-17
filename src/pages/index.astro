@@ -4,73 +4,164 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Marquee from '../components/Marquee.astro';
 import Hero from '../components/Hero.astro';
 import ProjectCard from '../components/ProjectCard.astro';
-import NoteCard from '../components/NoteCard.astro';
+import NoteEntry from '../components/NoteEntry.astro';
+import NewsEntry from '../components/NewsEntry.astro';
 import { url } from '../lib/url';
+import { formatDate } from '../lib/format';
+import { allTags } from '../lib/tags';
+import { notesByProject, noteTitles, projectTitles } from '../lib/related';
 
-const featured = (await getCollection('projects'))
-  .filter((p) => p.data.featured)
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const allProjects = (await getCollection('projects')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+const featured = allProjects.filter((p) => p.data.featured);
+
+// The newest featured project leads; the rest follow in the grid
+const [lead, ...rest] = featured;
+const trails = await notesByProject();
+const leadNotes = lead ? (trails.get(lead.id) ?? []) : [];
 
 const recentNotes = (await getCollection('notes'))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 4);
+  .slice(0, 3);
+
+const recentNews = (await getCollection('news'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 2);
+
+const noteTitle = await noteTitles();
+const projectTitle = await projectTitles();
+
+const leadDate = lead ? formatDate(lead.data.date) : '';
 ---
 
 <BaseLayout title="">
   <Hero />
   <Marquee />
 
-  <section class="section container home-first" data-pagefind-ignore>
-    <div class="section-title">
+  <section class="section container home-first hue-projects" data-pagefind-ignore>
+    <div class="band">
       <h2>精选项目</h2>
-      <a href={url('/projects')}>查看全部 →</a>
+      <span class="band-rule"></span>
+      <a class="band-more" href={url('/projects')}>全部 {allProjects.length} 个项目</a>
     </div>
+
     {
-      featured.length > 0 ? (
+      lead ? (
+        <a class="feature" href={url(`/projects/${lead.id}`)}>
+          <div class="feature-when">
+            <b>{leadDate.slice(0, 4)}</b>
+            {leadDate.slice(5, 7)} 月
+          </div>
+          <div>
+            <h3 class="feature-title">{lead.data.title}</h3>
+            <p class="feature-summary">{lead.data.summary}</p>
+            <div class="row-meta">
+              {allTags(lead.data).map((t) => (
+                <span class="tag" data-static>{t}</span>
+              ))}
+            </div>
+            {leadNotes.length > 0 && (
+              <>
+                <p class="trail-cap">做这个时写的 {leadNotes.length} 篇笔记</p>
+                <ul class="trail">
+                  {leadNotes.slice(0, 3).map((n) => (
+                    <li>
+                      {n.data.title}
+                      <span class="trail-date">{formatDate(n.data.date).slice(5)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </a>
+      ) : (
+        <p class="empty-state">还没有标记为 featured 的项目。</p>
+      )
+    }
+
+    {
+      rest.length > 0 && (
         <div class="card-grid">
-          {featured.map((p) => (
+          {rest.map((p) => (
             <ProjectCard
               id={p.id}
               title={p.data.title}
               date={p.data.date}
               summary={p.data.summary}
-              tags={p.data.tags}
-              featured={p.data.featured}
+              tags={allTags(p.data)}
+              noteCount={(trails.get(p.id) ?? []).length}
             />
           ))}
         </div>
-      ) : (
-        <p class="empty-state">还没有标记为 featured 的项目。</p>
       )
     }
   </section>
 
-  <section class="section container" data-pagefind-ignore>
-    <div class="section-title">
-      <h2>最近更新</h2>
-      <a href={url('/notes')}>全部笔记 →</a>
+  <section class="section container section-tight hue-notes" data-pagefind-ignore>
+    <div class="band">
+      <h2>最近的笔记</h2>
+      <span class="band-rule"></span>
+      <a class="band-more" href={url('/notes')}>全部笔记</a>
     </div>
-    <div class="card-grid">
+    <div class="rows">
       {
         recentNotes.map((n) => (
-          <NoteCard
+          <NoteEntry
             id={n.id}
             title={n.data.title}
             date={n.data.date}
             summary={n.data.summary}
             category={n.data.category}
-            tags={n.data.tags}
+            tags={allTags(n.data)}
             type={n.data.type}
+            projectTitle={
+              n.data.relatedProject
+                ? projectTitle.get(n.data.relatedProject)
+                : undefined
+            }
           />
         ))
       }
     </div>
   </section>
+
+  {
+    recentNews.length > 0 && (
+      <section class="section container section-tight hue-news" data-pagefind-ignore>
+        <div class="band">
+          <h2>最近的资讯</h2>
+          <span class="band-rule"></span>
+          <a class="band-more" href={url('/news')}>全部资讯</a>
+        </div>
+        <div class="rows">
+          {recentNews.map((n) => (
+            <NewsEntry
+              id={n.id}
+              title={n.data.title}
+              date={n.data.date}
+              summary={n.data.summary}
+              tags={allTags(n.data)}
+              sourceUrl={n.data.sourceUrl}
+              relatedNoteTitles={(n.data.relatedNotes ?? [])
+                .map((id) => noteTitle.get(id))
+                .filter((t): t is string => !!t)}
+            />
+          ))}
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>
 
 <style>
   /* First section sits right below the tilted marquee, so tighten its top spacing */
   .home-first {
     padding-top: 48px;
+  }
+  /* Sections after the first already have the one above them for breathing room */
+  .section-tight {
+    padding-top: 0;
   }
 </style>

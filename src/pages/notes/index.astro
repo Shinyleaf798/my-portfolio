@@ -1,44 +1,85 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import NoteCard from '../../components/NoteCard.astro';
+import NoteEntry from '../../components/NoteEntry.astro';
 import TagFilter from '../../components/TagFilter.astro';
+import ViewSwitch from '../../components/ViewSwitch.astro';
 import { url } from '../../lib/url';
-import { tagCounts } from '../../lib/tags';
+import { allTags } from '../../lib/tags';
+import { facetGroups } from '../../lib/tagGroups';
+import { projectTitles } from '../../lib/related';
 
 const notes = (await getCollection('notes')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
 );
 
-const allTags = tagCounts(notes);
+const groups = facetGroups(notes);
+const projectTitle = await projectTitles();
 ---
 
-<BaseLayout title="Notes" description="学习技术与语言时遇到的问题和解决方法。">
+<BaseLayout title="Notes" description="学习技术与语言时遇到的问题和解决方法。" hue="notes">
   <div class="section container" data-filter-scope>
-    <div class="page-header">
-      <h1>Notes</h1>
-      <p>
-        学习过程中的问题与解法, 共 <span data-result-count>{notes.length}</span> 篇 ·
-        <a href={url('/notes/tags')}>按标签浏览 →</a>
-      </p>
+    <div class="page-header head-split">
+      <div>
+        <h1>Notes</h1>
+        <p>
+          学习过程中的问题与解法, 共 <span class="count" data-result-count>{notes.length}</span> 篇 ·
+          <a href={url('/notes/tags')}>按标签浏览</a>
+        </p>
+      </div>
+      <ViewSwitch target="notes" />
     </div>
 
-    <TagFilter tags={allTags} />
+    <TagFilter groups={groups} />
 
-    <div class="card-grid">
+    <div class="rows listing" data-view="rows" data-view-target="notes">
       {
         notes.map((n) => (
-          <NoteCard
+          <NoteEntry
             id={n.id}
             title={n.data.title}
             date={n.data.date}
             summary={n.data.summary}
             category={n.data.category}
-            tags={n.data.tags}
+            tags={allTags(n.data)}
             type={n.data.type}
+            projectTitle={
+              n.data.relatedProject
+                ? projectTitle.get(n.data.relatedProject)
+                : undefined
+            }
           />
         ))
       }
     </div>
+
+    {/* Applies the saved view before paint, so a card-view reader does not
+        see the list flash past first. */}
+    <script is:inline>
+      (function () {
+        try {
+          var v = localStorage.getItem('view:notes');
+          if (v === 'cards') {
+            document
+              .querySelector('[data-view-target="notes"]')
+              .setAttribute('data-view', 'cards');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </div>
 </BaseLayout>
+
+<style>
+  /* Title on the left, view switch pinned to the right edge */
+  .head-split {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .head-split > div {
+    min-width: 0;
+  }
+</style>

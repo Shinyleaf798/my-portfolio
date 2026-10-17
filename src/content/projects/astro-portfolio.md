@@ -4,7 +4,7 @@ date: 2026-08-20
 summary: "基于 Astro 搭建的公开学习日志与知识库, 含笔记、项目、资讯三大板块与站内搜索。"
 featured: true
 tags: ["Astro", "TypeScript", "前端"]
-repoUrl: "https://github.com/your-name/portfolio"
+repoUrl: "https://github.com/Shinyleaf798/my-portfolio"
 ---
 
 ## 项目背景

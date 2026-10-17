@@ -21,7 +21,7 @@ const relatedNotes = (await getCollection('notes'))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
-<BaseLayout title={project.data.title} description={project.data.summary}>
+<BaseLayout title={project.data.title} description={project.data.summary} hue="projects">
   <div class="section container">
     <div class="article-wrap">
       <a class="back-link" href={url('/projects')}>← 返回 Projects</a>
@@ -58,12 +58,13 @@ const relatedNotes = (await getCollection('notes'))
       {
         relatedNotes.length > 0 && (
           <section class="related-notes" data-pagefind-ignore>
-            <h2 class="rn-title">相关笔记</h2>
-            <ul>
+            <h2 class="rn-title">做这个时写的笔记</h2>
+            <p class="rn-hint">开发过程里留下的记录, 不是事后补的文档。</p>
+            <ul class="trail">
               {relatedNotes.map((n) => (
                 <li>
-                  <a href={url(`/notes/${n.id}`)}>{n.data.title}</a>
-                  <span class="muted mono"> · {formatDate(n.data.date)}</span>
+                  <a class="to-notes" href={url(`/notes/${n.id}`)}>{n.data.title}</a>
+                  <span class="trail-date">{formatDate(n.data.date)}</span>
                 </li>
               ))}
             </ul>
@@ -101,16 +102,12 @@ const relatedNotes = (await getCollection('notes'))
   }
   .rn-title {
     font-size: 18px;
-    margin: 0 0 16px;
+    margin: 0 0 4px;
+    color: var(--hue, var(--accent));
   }
-  .related-notes ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: 10px;
-  }
-  .related-notes li {
-    font-size: 15px;
+  .rn-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 14px;
   }
 </style>

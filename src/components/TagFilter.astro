@@ -1,51 +1,109 @@
 ---
 interface Props {
-  // Tags already sorted by frequency descending
-  tags: { tag: string; count: number }[];
+  // Already grouped by lib/tagGroups.ts
+  groups: { label: string; tags: { tag: string; count: number }[] }[];
   // Tags beyond this count collapse into "More"
   collapseAfter?: number;
 }
-const { tags, collapseAfter = 12 } = Astro.props;
-const hiddenCount = Math.max(0, tags.length - collapseAfter);
+const { groups, collapseAfter = 12 } = Astro.props;
+
+// Collapsing counts across all groups; a group whose tags are all hidden
+// collapses along with them.
+let seen = 0;
+const rows = groups.map((g) => {
+  const items = g.tags.map((t) => ({ ...t, collapsed: seen++ >= collapseAfter }));
+  return { label: g.label, items, collapsed: items.every((i) => i.collapsed) };
+});
+const total = groups.reduce((n, g) => n + g.tags.length, 0);
+const hiddenCount = Math.max(0, total - collapseAfter);
 ---
 
 <div class="tag-filter" role="group" aria-label="按标签筛选">
-  <button class="tag is-active" data-filter="*">全部</button>
   {
-    tags.map((t, i) => (
-      <button
-        data-filter={t.tag}
-        class:list={['tag', { 'is-collapsed': i >= collapseAfter }]}
-      >
-        {t.tag}
-        <span class="tf-count">{t.count}</span>
-      </button>
+    rows.map((r) => (
+      <div class:list={['tf-row', { 'is-collapsed': r.collapsed }]}>
+        <span class="tf-label">{r.label}</span>
+        <div class="tf-tags">
+          {r.items.map((i) => (
+            <button
+              type="button"
+              data-filter={i.tag}
+              data-group={r.label}
+              aria-pressed="false"
+              class:list={['tag', { 'is-collapsed': i.collapsed }]}
+            >
+              {i.tag}
+              <span class="tf-count">{i.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     ))
   }
   {
     hiddenCount > 0 && (
-      <button class="tag tf-more" data-tf-more>
-        更多 <span class="tf-count">+{hiddenCount}</span>
-      </button>
+      <div class="tf-row">
+        <span class="tf-label" aria-hidden="true" />
+        <div class="tf-tags">
+          <button class="tag tf-more" data-tf-more>
+            更多 <span class="tf-count">+{hiddenCount}</span>
+          </button>
+        </div>
+      </div>
     )
   }
 </div>
 
+{/* Moved next to the result count by the script below; only shown while a
+    tag is active, since "no filter" is the default state and needs no button. */}
+<button class="tf-clear" data-tf-clear hidden>✕ 清除筛选</button>
+
+<p class="tf-empty" data-tf-empty hidden>
+  没有同时满足这些标签的内容。去掉几个再试。
+</p>
+
 <style>
+  /* Negative top margin tightens the gap left by .page-header's 40px,
+     which is too airy above a filter row. */
   .tag-filter {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 28px;
-    align-items: center;
+    display: grid;
+    gap: 10px;
+    margin: -12px 0 30px;
   }
+  /* One row per group: label on the left, tags wrapping on the right */
+  .tf-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  /* Width fits the longest label ("硬件 & 软件修复") without wrapping */
+  .tf-label {
+    flex: none;
+    width: 112px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    /* Nudges the label onto the same optical line as the taller tag chips */
+    position: relative;
+    top: -1px;
+  }
+  .tf-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /* Bigger than the tags on cards: these are controls, not metadata */
   .tag-filter .tag {
     cursor: pointer;
     background: none;
     font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 6px 12px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
   }
   /* Active state: needs higher specificity within this scope, otherwise it
      gets overridden by background:none, causing dark text on a dark
@@ -55,19 +113,23 @@ const hiddenCount = Math.max(0, tags.length - collapseAfter);
     color: var(--accent-ink);
   }
   .tf-count {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-muted);
     background: var(--surface-3);
     border-radius: 20px;
-    padding: 0 6px;
+    padding: 0 7px;
     line-height: 1.6;
   }
   .tag.is-active .tf-count {
     color: var(--accent-ink);
     background: #00000026;
   }
+  .tf-row.is-collapsed,
   .tag.is-collapsed {
     display: none;
+  }
+  .tag-filter.expanded .tf-row.is-collapsed {
+    display: flex;
   }
   .tag-filter.expanded .tag.is-collapsed {
     display: inline-flex;
@@ -78,13 +140,55 @@ const hiddenCount = Math.max(0, tags.length - collapseAfter);
   .tf-more {
     color: var(--text-muted);
   }
+  .tf-clear {
+    margin-left: 12px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .tf-clear:hover {
+    color: var(--accent);
+  }
+  .tf-clear[hidden] {
+    display: none;
+  }
+  .tf-empty {
+    font-size: var(--t-small, 14px);
+    color: var(--text-muted);
+    margin: 0 0 28px;
+  }
+  .tf-empty[hidden] {
+    display: none;
+  }
+  /* Narrow screens: label sits above its tags instead of beside them */
+  @media (max-width: 600px) {
+    .tf-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .tf-label {
+      width: auto;
+      text-align: left;
+    }
+  }
 </style>
 
 <script>
-  // Client-side tag filtering: clicking a tag instantly filters the current
-  // list without navigating to a new page.
-  // Supports preselecting via ?tag=xxx in the URL, for quick links from
-  // /notes/tags.
+  // Multi-select tag filtering, no page navigation.
+  //
+  // Selection rules, the standard faceted-search ones:
+  //   within one group  -> OR   (领域: 前端 + 后端 = either)
+  //   across groups     -> AND  (领域:前端 AND 编程语言:TypeScript)
+  // Picking two things from the same row widens the result; picking from
+  // two different rows narrows it. That matches what each row means.
+  //
+  // Preselection via ?tag=a,b in the URL, for links from /notes/tags.
   function initScope(scope: HTMLElement) {
     const filter = scope.querySelector<HTMLElement>('.tag-filter');
     if (!filter) return;
@@ -92,51 +196,99 @@ const hiddenCount = Math.max(0, tags.length - collapseAfter);
       filter.querySelectorAll<HTMLButtonElement>('.tag:not(.tf-more)')
     );
     const moreBtn = filter.querySelector<HTMLButtonElement>('[data-tf-more]');
+    const clearBtn = scope.querySelector<HTMLButtonElement>('[data-tf-clear]');
+    const emptyEl = scope.querySelector<HTMLElement>('[data-tf-empty]');
     const cards = Array.from(scope.querySelectorAll<HTMLElement>('[data-tags]'));
     const countEl = scope.querySelector<HTMLElement>('[data-result-count]');
+
+    // Park the clear control right after the result count, so "showing N"
+    // and "clear" read as a single line.
+    if (clearBtn && countEl?.parentElement) {
+      countEl.parentElement.appendChild(clearBtn);
+    }
+
+    const active = new Set<string>();
+    const groupOf = new Map<string, string>();
+    buttons.forEach((b) =>
+      groupOf.set(b.dataset.filter || '', b.dataset.group || '')
+    );
 
     function expand() {
       filter!.classList.add('expanded');
     }
 
-    function apply(active: string) {
+    function apply() {
+      // Selected tags bucketed by the row they came from
+      const picked = new Map<string, string[]>();
+      for (const tag of active) {
+        const g = groupOf.get(tag) || '';
+        if (!picked.has(g)) picked.set(g, []);
+        picked.get(g)!.push(tag);
+      }
+
       let shown = 0;
       for (const card of cards) {
-        const cardTags = (card.dataset.tags || '').split(',').map((s) => s.trim());
-        const match = active === '*' || cardTags.includes(active);
+        const cardTags = (card.dataset.tags || '')
+          .split(',')
+          .map((s) => s.trim());
+        let match = true;
+        for (const tags of picked.values()) {
+          if (!tags.some((t) => cardTags.includes(t))) {
+            match = false;
+            break;
+          }
+        }
         card.style.display = match ? '' : 'none';
         if (match) shown++;
       }
-      buttons.forEach((b) =>
-        b.classList.toggle('is-active', b.dataset.filter === active)
-      );
+
+      buttons.forEach((b) => {
+        const on = active.has(b.dataset.filter || '');
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
       if (countEl) countEl.textContent = String(shown);
+      if (clearBtn) clearBtn.hidden = active.size === 0;
+      if (emptyEl) emptyEl.hidden = shown > 0;
+    }
+
+    function select() {
+      apply();
+      const u = new URL(window.location.href);
+      if (active.size === 0) u.searchParams.delete('tag');
+      else u.searchParams.set('tag', [...active].join(','));
+      history.replaceState(null, '', u);
     }
 
     buttons.forEach((b) => {
       b.addEventListener('click', () => {
-        const active = b.dataset.filter || '*';
-        apply(active);
-        const u = new URL(window.location.href);
-        if (active === '*') u.searchParams.delete('tag');
-        else u.searchParams.set('tag', active);
-        history.replaceState(null, '', u);
+        const tag = b.dataset.filter || '';
+        // Clicking a selected tag removes it, so a filter can always be
+        // undone where it was set
+        if (active.has(tag)) active.delete(tag);
+        else active.add(tag);
+        select();
       });
     });
 
     moreBtn?.addEventListener('click', expand);
+    clearBtn?.addEventListener('click', () => {
+      active.clear();
+      select();
+    });
 
-    // Initial state: read ?tag= from the URL
-    const preset = new URL(window.location.href).searchParams.get('tag');
-    const presetBtn = preset
-      ? buttons.find((b) => b.dataset.filter === preset)
-      : null;
-    if (presetBtn) {
-      if (presetBtn.classList.contains('is-collapsed')) expand(); // reveal it if collapsed
-      apply(preset!);
-    } else {
-      apply('*');
+    // Initial state: read ?tag=a,b from the URL
+    const preset = (new URL(window.location.href).searchParams.get('tag') || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    for (const tag of preset) {
+      const btn = buttons.find((b) => b.dataset.filter === tag);
+      if (!btn) continue;
+      active.add(tag);
+      if (btn.classList.contains('is-collapsed')) expand(); // reveal it
     }
+    apply();
   }
 
   document.querySelectorAll<HTMLElement>('[data-filter-scope]').forEach(initScope);

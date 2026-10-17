@@ -1,0 +1,56 @@
+---
+import { url } from '../lib/url';
+import { formatDate } from '../lib/format';
+
+interface Props {
+  id: string;
+  title: string;
+  date: Date;
+  summary: string;
+  tags: string[];
+  sourceUrl: string;
+  // Titles of the notes this item led to
+  relatedNoteTitles?: string[];
+}
+
+const { id, title, date, summary, tags, sourceUrl, relatedNoteTitles = [] } =
+  Astro.props;
+
+const d = formatDate(date);
+const [year, rest] = [d.slice(0, 4), d.slice(5)];
+
+// Bare domain, so the source reads as a place rather than a URL
+let host = '';
+try {
+  host = new URL(sourceUrl).hostname.replace(/^www\./, '');
+} catch {
+  host = '';
+}
+---
+
+<a class="row" href={url(`/news/${id}`)} data-tags={tags.join(',')}>
+  <div class="row-when">
+    <b>{rest}</b>{year}
+  </div>
+  <div>
+    <h3 class="row-title">
+      {title}
+      {host && <span class="row-ext">{host}</span>}
+    </h3>
+    <p class="row-summary">{summary}</p>
+    <div class="row-meta">
+      {tags.map((t) => <span class="tag" data-static>{t}</span>)}
+      {relatedNoteTitles.length > 0 && (
+        <span>
+          由此写了 <span class="to-notes">{relatedNoteTitles.join('、')}</span>
+        </span>
+      )}
+    </div>
+  </div>
+</a>
+
+<style>
+  .tag[data-static] {
+    cursor: default;
+  }
+</style>

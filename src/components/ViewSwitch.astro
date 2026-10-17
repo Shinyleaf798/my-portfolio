@@ -1,0 +1,70 @@
+---
+// Switches a [data-view] listing between rows and cards.
+// The choice is remembered per browser; it is a reading preference,
+// nothing the server needs to know about.
+interface Props {
+  // Matches the listing's data-view-target
+  target: string;
+}
+const { target } = Astro.props;
+---
+
+<div class="view-switch" role="group" aria-label="切换列表样式" data-view-switch={target}>
+  <button type="button" data-view-value="rows" aria-pressed="true">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+      <path d="M1.5 3.5h13M1.5 8h13M1.5 12.5h13" stroke-linecap="round" />
+    </svg>
+    列表
+  </button>
+  <button type="button" data-view-value="cards" aria-pressed="false">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1" />
+      <rect x="9" y="1.5" width="5.5" height="5.5" rx="1" />
+      <rect x="1.5" y="9" width="5.5" height="5.5" rx="1" />
+      <rect x="9" y="9" width="5.5" height="5.5" rx="1" />
+    </svg>
+    卡片
+  </button>
+</div>
+
+<script>
+  function initSwitch(group: HTMLElement) {
+    const target = group.dataset.viewSwitch!;
+    const listing = document.querySelector<HTMLElement>(
+      `[data-view-target="${target}"]`
+    );
+    if (!listing) return;
+
+    const key = `view:${target}`;
+    const buttons = Array.from(
+      group.querySelectorAll<HTMLButtonElement>('[data-view-value]')
+    );
+
+    function apply(view: string) {
+      listing!.dataset.view = view;
+      buttons.forEach((b) =>
+        b.setAttribute('aria-pressed', String(b.dataset.viewValue === view))
+      );
+    }
+
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(key);
+    } catch {}
+    apply(saved === 'cards' ? 'cards' : 'rows');
+
+    buttons.forEach((b) => {
+      b.addEventListener('click', () => {
+        const view = b.dataset.viewValue!;
+        apply(view);
+        try {
+          localStorage.setItem(key, view);
+        } catch {}
+      });
+    });
+  }
+
+  document
+    .querySelectorAll<HTMLElement>('[data-view-switch]')
+    .forEach(initSwitch);
+</script>
