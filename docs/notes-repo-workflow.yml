@@ -1,0 +1,36 @@
+# ============================================================
+# 放到 my-note 仓库的 .github/workflows/notify-portfolio.yml
+#
+# 作用：push 之后通知 my-portfolio 重新构建部署。
+#
+# 配置步骤：
+#   1. 建一个 Personal Access Token
+#      - Fine-grained token，Repository access 选 Shinyleaf798/my-portfolio
+#      - 权限：Contents = Read-only，Actions = Read and write
+#   2. 在 my-note 仓库 Settings → Secrets and variables → Actions
+#      新建 secret，名字 PORTFOLIO_DISPATCH_TOKEN，值为上面的 token
+#   3. 把这个文件放到 my-note 的 .github/workflows/ 下
+# ============================================================
+name: Notify portfolio
+
+on:
+  push:
+    branches: [main]
+    # 只有内容变动才触发，改 README 不会白跑一次构建
+    paths:
+      - 'notes/**'
+      - 'news/**'
+      - 'project/**'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger portfolio rebuild
+        run: |
+          curl -sS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.PORTFOLIO_DISPATCH_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/Shinyleaf798/my-portfolio/dispatches \
+            -d '{"event_type":"content-updated"}'

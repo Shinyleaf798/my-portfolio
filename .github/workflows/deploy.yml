@@ -1,8 +1,10 @@
 name: Build and Deploy
 
 on:
+  # Fired by the notes repo right after a push, so the site rebuilds on its own.
+  repository_dispatch:
+    types: [content-updated]
   # Manual trigger (click "Run workflow" on the Actions page).
-  # Use this after pushing new content to the notes repo.
   workflow_dispatch:
   # Also build automatically when this repo (site code) is updated.
   push:
@@ -18,51 +20,101 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # ------------------------------------------------------------------
+  # Which folders of the notes repo get published — ONE PER LINE.
+  # Paths are relative to that repo's root. The CONTENTS of each folder
+  # are copied into the matching collection, so listing several folders
+  # merges them; only same-named files would collide.
+  #
+  # Publish everything under notes/:        Publish just two subfolders:
+  #   NOTES_SOURCES: |                        NOTES_SOURCES: |
+  #     notes                                   notes/rust
+  #                                             notes/japanese
+  #
+  # Anything not listed never reaches the site, so the notes repo can
+  # keep drafts and private scratch folders alongside published ones.
+  # One line per folder matters: the list is fed to git's sparse-checkout,
+  # which reads one pattern per line.
+  # ------------------------------------------------------------------
+  NOTES_REPO: Shinyleaf798/my-note
+  NOTES_SOURCES: |
+    notes
+  NEWS_SOURCES: |
+    news
+  # Each project is a folder here — project/corddaily/index.md plus its
+  # screenshots — so the folder name becomes the URL: /projects/corddaily
+  PROJECTS_SOURCES: |
+    project
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      skipped: ${{ steps.content_check.outputs.skipped }}
     steps:
       - name: Checkout site repo
         uses: actions/checkout@v4
 
-      # Ensure target directories exist and are empty (Git doesn't track empty
-      # folders, so if sample content was deleted, the folder may not exist
-      # at all after checkout — mkdir -p covers that).
+      # Git doesn't track empty folders, so these may not exist after checkout.
+      # Notes and news are wiped because the notes repo owns them outright.
+      # Projects are NOT wiped: entries committed in this repo (such as the
+      # site itself) stand alongside the ones injected from the notes repo.
       - name: Prepare content directories
         run: |
-          mkdir -p src/content/notes src/content/news
+          mkdir -p src/content/notes src/content/news src/content/projects
           rm -rf src/content/notes/* src/content/news/*
 
-      # Pull the whole notes repo into a temp dir. It's organized internally
-      # with notes/ and news/ subfolders.
-      # continue-on-error: kept as a long-term safety net — if the notes repo
-      # is ever renamed/deleted/temporarily unreachable, that shouldn't also
-      # fail deployment of the site itself (About/Projects etc).
+      # Sparse checkout pulls only the listed folders instead of the whole
+      # repo — the notes repo can grow without slowing every build down.
+      # continue-on-error: if the notes repo is ever renamed, deleted or
+      # briefly unreachable, that shouldn't also block deploying the site
+      # itself (About / Projects and so on).
       - name: Checkout notes repo
         uses: actions/checkout@v4
         continue-on-error: true
         with:
-          repository: Shinyleaf798/my-note
+          repository: ${{ env.NOTES_REPO }}
           path: _notes-source
+          sparse-checkout: |
+            ${{ env.NOTES_SOURCES }}
+            ${{ env.NEWS_SOURCES }}
+            ${{ env.PROJECTS_SOURCES }}
           # token: ${{ secrets.NOTES_REPO_TOKEN }}   # uncomment if private
 
-      # Inject the notes repo's notes/ and news/ subfolders into the
-      # matching content directories on the site.
-      - name: Inject notes and news content
+      # A listed folder that yields nothing is a configuration mistake, not
+      # a content one: deploying a site whose Notes section silently went
+      # empty is worse than not deploying at all. So this fails hard, while
+      # individual malformed files are handled by the next step.
+      - name: Inject selected folders
         run: |
-          shopt -s nullglob dotglob
-          notes_files=(_notes-source/notes/*)
-          if [ ${#notes_files[@]} -gt 0 ]; then
-            cp -r _notes-source/notes/. src/content/notes/
-          else
-            echo "Warning: no notes/ directory found (or empty) in notes repo"
+          set -euo pipefail
+
+          if [ ! -d _notes-source ]; then
+            echo "::error::Could not check out $NOTES_REPO - nothing to publish"
+            exit 1
           fi
-          news_files=(_notes-source/news/*)
-          if [ ${#news_files[@]} -gt 0 ]; then
-            cp -r _notes-source/news/. src/content/news/
-          else
-            echo "Warning: no news/ directory found (or empty) in notes repo"
-          fi
+
+          copy_sources() {
+            local target="$1"; shift
+            for folder in "$@"; do
+              local src="_notes-source/$folder"
+              if [ ! -d "$src" ] || [ -z "$(ls -A "$src")" ]; then
+                echo "::error::'$folder' is missing or empty in $NOTES_REPO"
+                echo "Fix the path in this workflow's *_SOURCES list, or drop it from the list."
+                exit 1
+              fi
+              cp -r "$src/." "$target/"
+              echo "  + $folder"
+            done
+          }
+
+          echo "notes:"
+          copy_sources src/content/notes $NOTES_SOURCES
+          echo "news:"
+          copy_sources src/content/news $NEWS_SOURCES
+          echo "projects:"
+          copy_sources src/content/projects $PROJECTS_SOURCES
           rm -rf _notes-source
 
       - name: Setup Node
@@ -73,6 +125,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # One hand-edited file in the notes repo must not take the whole
+      # site offline: Astro aborts on the first invalid entry, so drop the
+      # bad ones here and let the rest deploy. Skips are logged as warnings
+      # and listed in the run summary.
+      - name: Drop content that would break the build
+        id: content_check
+        run: npm run check:content
 
       - name: Build (Astro + Pagefind index)
         run: npm run build
@@ -92,3 +152,12 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # The site is already live at this point. Failing here turns the run
+      # red so GitHub emails about it - a skipped note is easy to miss when
+      # the only trace is a warning nobody opens the Actions tab to read.
+      - name: Report skipped content
+        if: needs.build.outputs.skipped != '' && needs.build.outputs.skipped != '0'
+        run: |
+          echo "::error::Site deployed, but ${{ needs.build.outputs.skipped }} content file(s) were skipped - see the build job summary for which and why"
+          exit 1
