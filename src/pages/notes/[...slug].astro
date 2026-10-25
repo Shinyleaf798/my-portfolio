@@ -19,6 +19,18 @@ let relatedProject = null;
 if (note.data.type === 'project' && note.data.relatedProject) {
   relatedProject = await getEntry('projects', note.data.relatedProject);
 }
+
+// Related notes: the ones this note lists, plus the ones listing it back,
+// so a new note never needs the old one edited to link both ways
+const allNotes = await getCollection('notes');
+const relatedIds = new Set(note.data.relatedNotes ?? []);
+for (const n of allNotes) {
+  if (n.data.relatedNotes?.includes(note.id)) relatedIds.add(n.id);
+}
+relatedIds.delete(note.id);
+const relatedNotes = allNotes
+  .filter((n) => relatedIds.has(n.id))
+  .sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
 ---
 
 <BaseLayout title={note.data.title} description={note.data.summary} hue="notes">
@@ -61,6 +73,22 @@ if (note.data.type === 'project' && note.data.relatedProject) {
         <div class="markdown">
           <Content />
         </div>
+
+        {
+          relatedNotes.length > 0 && (
+            <section class="related-notes" data-pagefind-ignore>
+              <h2 class="rn-title">相关笔记</h2>
+              <ul>
+                {relatedNotes.map((n) => (
+                  <li>
+                    <a class="to-notes" href={url(`/notes/${n.id}`)}>{n.data.title}</a>
+                    <span class="rn-date">{formatDate(n.data.date)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
         </article>
       </div>
 
@@ -75,6 +103,29 @@ if (note.data.type === 'project' && note.data.relatedProject) {
   .related {
     font-size: 14px;
     margin: 0 0 16px;
+  }
+
+  .related-notes {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .rn-title {
+    font-size: 18px;
+    margin: 0 0 14px;
+    color: var(--hue, var(--accent));
+  }
+  .related-notes ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .rn-date {
+    margin-left: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
   }
 
   /* Three-column docs layout: left nav + body + right-side TOC */

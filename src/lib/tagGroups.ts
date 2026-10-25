@@ -3,9 +3,9 @@ import { allTags, type Faceted } from './tags';
 /**
  * Groups shown in the tag filter, in display order.
  *
- * The first three come straight from an entry's own frontmatter: a note
- * saying `languages: ["TypeScript"]` puts TypeScript under 编程语言 without
- * this file knowing anything about TypeScript.
+ * Groups with `from` read an entry's own frontmatter: a note saying
+ * `languages: ["TypeScript"]` puts TypeScript under 编程语言 without this
+ * file knowing anything about TypeScript. A group can also route `tags`.
  *
  * The lists below only route free-form `tags`. Add a word here when it
  * deserves its own group rather than landing in 主题; leave it out and
@@ -17,6 +17,7 @@ export const TAG_GROUPS: { label: string; from?: keyof Faceted; tags?: string[] 
   { label: '领域', from: 'domains' },
   {
     label: '工具 & 平台',
+    from: 'tools',
     tags: ['CLI', 'Git', 'GitHub', 'Docker', 'VS Code', 'Linux', 'Windows'],
   },
   {

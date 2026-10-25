@@ -9,10 +9,11 @@ const folderId = ({ entry }: { entry: string }) =>
 
 // Facets: an entry sorts itself into the tag groups rather than relying on
 // a lookup table in the site. `tags` stays free-form for anything that is
-// not a language, framework or domain.
+// not a language, framework, tool or domain.
 const facets = {
   languages: z.array(z.string()).default([]),
   frameworks: z.array(z.string()).default([]),
+  tools: z.array(z.string()).default([]),
   domains: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
 };
@@ -47,6 +48,8 @@ const notes = defineCollection({
       relatedProject: z.string().optional(),
       // Optional: notes that declare domains get grouped by those instead
       category: z.string().optional(),
+      // Slugs of notes this one builds on; the linked notes list it back
+      relatedNotes: z.array(z.string()).optional(),
       ...prose,
       ...facets,
     })
