@@ -1,4 +1,4 @@
-import { allTags, type Faceted } from './tags';
+import type { Faceted } from './tags';
 
 /**
  * Groups shown in the tag filter, in display order.
@@ -83,9 +83,4 @@ export function facetGroups<T extends { data: Faceted }>(
         .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)),
     }))
     .filter((g) => g.tags.length > 0);
-}
-
-/** Total distinct tags across every group — drives the collapse threshold. */
-export function countTags<T extends { data: Faceted }>(items: T[]): number {
-  return new Set(items.flatMap((i) => allTags(i.data))).size;
 }

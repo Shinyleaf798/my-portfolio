@@ -2,26 +2,23 @@
 interface Props {
   // Already grouped by lib/tagGroups.ts
   groups: { label: string; tags: { tag: string; count: number }[] }[];
-  // Tags beyond this count collapse into "More"
+  // Each row shows this many tags; the rest fold behind a toggle
   collapseAfter?: number;
 }
-const { groups, collapseAfter = 12 } = Astro.props;
+const { groups, collapseAfter = 6 } = Astro.props;
 
-// Collapsing counts across all groups; a group whose tags are all hidden
-// collapses along with them.
-let seen = 0;
-const rows = groups.map((g) => {
-  const items = g.tags.map((t) => ({ ...t, collapsed: seen++ >= collapseAfter }));
-  return { label: g.label, items, collapsed: items.every((i) => i.collapsed) };
-});
-const total = groups.reduce((n, g) => n + g.tags.length, 0);
-const hiddenCount = Math.max(0, total - collapseAfter);
+// Collapsing is per row, so a long 主题 row never hides 编程语言
+const rows = groups.map((g) => ({
+  label: g.label,
+  items: g.tags.map((t, i) => ({ ...t, collapsed: i >= collapseAfter })),
+  hidden: Math.max(0, g.tags.length - collapseAfter),
+}));
 ---
 
 <div class="tag-filter" role="group" aria-label="按标签筛选">
   {
     rows.map((r) => (
-      <div class:list={['tf-row', { 'is-collapsed': r.collapsed }]}>
+      <div class="tf-row">
         <span class="tf-label">{r.label}</span>
         <div class="tf-tags">
           {r.items.map((i) => (
@@ -36,21 +33,15 @@ const hiddenCount = Math.max(0, total - collapseAfter);
               <span class="tf-count">{i.count}</span>
             </button>
           ))}
+          {r.hidden > 0 && (
+            <button type="button" class="tag tf-more" data-tf-more aria-expanded="false">
+              <span class="tf-more-open">展开 <span class="tf-count">+{r.hidden}</span></span>
+              <span class="tf-more-close">收起</span>
+            </button>
+          )}
         </div>
       </div>
     ))
-  }
-  {
-    hiddenCount > 0 && (
-      <div class="tf-row">
-        <span class="tf-label" aria-hidden="true" />
-        <div class="tf-tags">
-          <button class="tag tf-more" data-tf-more>
-            更多 <span class="tf-count">+{hiddenCount}</span>
-          </button>
-        </div>
-      </div>
-    )
   }
 </div>
 
@@ -124,21 +115,27 @@ const hiddenCount = Math.max(0, total - collapseAfter);
     color: var(--accent-ink);
     background: #00000026;
   }
-  .tf-row.is-collapsed,
-  .tag.is-collapsed {
+  /* A selected tag stays visible even in a folded row */
+  .tag-filter .tag.is-collapsed:not(.is-active) {
     display: none;
   }
-  .tag-filter.expanded .tf-row.is-collapsed {
-    display: flex;
-  }
-  .tag-filter.expanded .tag.is-collapsed {
+  .tag-filter .tf-row.expanded .tag.is-collapsed {
     display: inline-flex;
-  }
-  .tag-filter.expanded .tf-more {
-    display: none;
   }
   .tf-more {
     color: var(--text-muted);
+  }
+  .tf-more-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .tf-more-close,
+  .tf-row.expanded .tf-more-open {
+    display: none;
+  }
+  .tf-row.expanded .tf-more-close {
+    display: inline;
   }
   .tf-clear {
     margin-left: 12px;
@@ -195,7 +192,9 @@ const hiddenCount = Math.max(0, total - collapseAfter);
     const buttons = Array.from(
       filter.querySelectorAll<HTMLButtonElement>('.tag:not(.tf-more)')
     );
-    const moreBtn = filter.querySelector<HTMLButtonElement>('[data-tf-more]');
+    const moreBtns = Array.from(
+      filter.querySelectorAll<HTMLButtonElement>('[data-tf-more]')
+    );
     const clearBtn = scope.querySelector<HTMLButtonElement>('[data-tf-clear]');
     const emptyEl = scope.querySelector<HTMLElement>('[data-tf-empty]');
     const cards = Array.from(scope.querySelectorAll<HTMLElement>('[data-tags]'));
@@ -213,8 +212,12 @@ const hiddenCount = Math.max(0, total - collapseAfter);
       groupOf.set(b.dataset.filter || '', b.dataset.group || '')
     );
 
-    function expand() {
-      filter!.classList.add('expanded');
+    // Opens or folds the row a toggle or tag sits in
+    function setExpanded(el: HTMLElement, open: boolean) {
+      const row = el.closest('.tf-row');
+      if (!row) return;
+      row.classList.toggle('expanded', open);
+      row.querySelector('[data-tf-more]')?.setAttribute('aria-expanded', String(open));
     }
 
     function apply() {
@@ -271,7 +274,11 @@ const hiddenCount = Math.max(0, total - collapseAfter);
       });
     });
 
-    moreBtn?.addEventListener('click', expand);
+    moreBtns.forEach((b) =>
+      b.addEventListener('click', () =>
+        setExpanded(b, b.getAttribute('aria-expanded') !== 'true')
+      )
+    );
     clearBtn?.addEventListener('click', () => {
       active.clear();
       select();
@@ -286,7 +293,7 @@ const hiddenCount = Math.max(0, total - collapseAfter);
       const btn = buttons.find((b) => b.dataset.filter === tag);
       if (!btn) continue;
       active.add(tag);
-      if (btn.classList.contains('is-collapsed')) expand(); // reveal it
+      if (btn.classList.contains('is-collapsed')) setExpanded(btn, true); // reveal it
     }
     apply();
   }
