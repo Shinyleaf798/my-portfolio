@@ -69,12 +69,19 @@ function problems(data, rule) {
 
 const skipped = [];
 let checked = 0;
+let drafts = 0;
 
 for (const [collection, rule] of Object.entries(RULES)) {
   for (const file of await markdownFiles(join(CONTENT_ROOT, collection))) {
     checked++;
     const raw = await readFile(file, 'utf8');
     const { data, error } = frontmatter(raw);
+    // Drafts stay in the notes repo but never reach the site; not an error
+    if (data?.draft === true) {
+      await rm(file);
+      drafts++;
+      continue;
+    }
     const issues = error ? [error] : problems(data, rule);
     if (issues.length === 0) continue;
     await rm(file);
@@ -91,7 +98,7 @@ async function reportCount(n) {
 }
 
 if (skipped.length === 0) {
-  console.log(`内容检查通过: ${checked} 个文件`);
+  console.log(`内容检查通过: ${checked} 个文件 (草稿 ${drafts} 个, 不发布)`);
   await reportCount(0);
   process.exit(0);
 }
@@ -112,7 +119,7 @@ for (const { file, issues } of skipped) {
   summary.push(`| \`${file}\` | ${issues.join('<br>')} |`);
 }
 
-console.log(`\n内容检查: ${checked} 个文件, 跳过 ${skipped.length} 个`);
+console.log(`\n内容检查: ${checked} 个文件, 草稿 ${drafts} 个, 跳过 ${skipped.length} 个`);
 
 await reportCount(skipped.length);
 

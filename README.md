@@ -34,34 +34,31 @@ src/
 │   └── news/              资讯 (.md)
 ├── components/            Hero / Nav / Footer / 条目 / TOC / TagFilter
 ├── layouts/BaseLayout.astro
-├── lib/                   url() 基路径助手 · 日期格式化 · 标签分组 · 关联聚合
+├── lib/                   url() 基路径助手 · 日期格式化 · 标签分组
 ├── pages/                 路由页面
 └── styles/global.css      设计 Token 与全局样式
 scripts/
-└── prune-invalid-content.mjs   构建前剔除 frontmatter 不合格的内容
+└── prune-invalid-content.mjs   构建前剔除草稿和 frontmatter 不合格的内容
 ```
 
 ## 内容 Schema
 
-必填字段 (缺少会被构建前的检查剔除, 不会出现在网站上):
+完整规则 (写作者视角) 在笔记仓库的
+[docs/publishing-rules.md](https://github.com/Shinyleaf798/my-note/blob/main/docs/publishing-rules.md)。
+权威定义是 [src/content.config.ts](src/content.config.ts)。
 
-- **Notes** — `title`, `date`, `description` (或 `summary`)
-- **Projects** — `title`, `date`, `description` (或 `summary`)
-- **News** — `title`, `date`, `sourceUrl`, `description` (或 `summary`)
+| | 必填 | 可选 |
+| --- | --- | --- |
+| 全部 | `title`, `date`, `description` (或 `summary`) | 分面 `languages[]` `frameworks[]` `tools[]` `domains[]`, `tags[]`, `draft` |
+| Notes | | `type` + `relatedProject`, `category`, `relatedNotes[]` |
+| Projects | | `featured`, `repoUrl` |
+| News | `sourceUrl` | `relatedNotes[]` |
 
-可选字段:
-
-- **分面** — `languages[]`, `frameworks[]`, `domains[]`, `tags[]`
-  条目靠这四个字段给自己归类, 标签筛选的分组行直接由它们生成, 代码里不维护技术名对照表。
-- **Notes** — `type` (`project` | `general`), `relatedProject`, `category`
-  不写 `category` 时自动取 `domains[0]`。
-- **Projects** — `featured` (首页精选), `repoUrl`
-- **News** — `relatedNotes[]`
-
-项目详情页会自动聚合 `relatedProject` 指向它的所有笔记, 无需手动维护列表。
-
-一个条目可以是单个 `.md`, 也可以是一个文件夹 (`corddaily/index.md` + 图片),
-图片用相对路径引用即可, 构建时自动压缩并生成响应式尺寸。
+- **分面**直接生成标签筛选的分组行, 代码里不维护技术名对照表。每行超过 6 个时折叠。
+- **`draft: true`** 的条目在构建前被拿掉, 不算错误。
+- **`relatedNotes`** 在笔记之间是双向的: A 指向 B, 两篇底部都会列出对方。
+- 项目页自动列出 `type: project` + `relatedProject` 指向它的笔记。
+- 条目可以是文件夹 (`corddaily/index.md` + 图片), 图片用相对路径引用, 构建时自动压缩。
 
 ## 内容来源与自动部署
 
@@ -80,6 +77,7 @@ scripts/
 | 情况 | 结果 |
 | --- | --- |
 | 单个文件 frontmatter 不合格 | 跳过该文件, **其余照常部署**, 运行标红并列出原因 |
+| 引用的图片不存在 | **构建失败, 不部署** |
 | 清单里的文件夹拉不到 | **直接失败, 不部署** (配置错误, 否则会悄悄发布一个空站) |
 | 笔记仓库检出失败 | **直接失败, 不部署** |
 
@@ -94,9 +92,3 @@ scripts/
 2. [deploy.yml](.github/workflows/deploy.yml) 里的 `NOTES_REPO` 指向笔记仓库。
    私有仓库需配置 `NOTES_REPO_TOKEN` secret。
 3. 仓库 Settings → Pages → Source 选择 **GitHub Actions**。
-
-## 待办
-
-- [ ] 填写 [about.astro](src/pages/about.astro) 的个人真实信息
-- [ ] 替换 Hero 的占位文案与社交链接 (`src/components/Hero.astro`)
-- [ ] 在笔记仓库补齐 `project/corddaily/index.md` 的内容
