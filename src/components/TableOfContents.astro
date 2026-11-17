@@ -8,23 +8,57 @@ interface Props {
   headings: Heading[];
 }
 const { headings } = Astro.props;
-// Only H2/H3 headings are included in the table of contents
-const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+
+// Nest each ### under the ## before it. A ### with no ## above it stays
+// at the top level so nothing goes missing.
+type Section = Heading & { children: Heading[] };
+const sections: Section[] = [];
+for (const h of headings) {
+  if (h.depth === 2) {
+    sections.push({ ...h, children: [] });
+  } else if (h.depth === 3) {
+    const parent = sections[sections.length - 1];
+    if (parent && parent.depth === 2) parent.children.push(h);
+    else sections.push({ ...h, children: [] });
+  }
+}
+
+const total = sections.reduce((n, s) => n + 1 + s.children.length, 0);
+// Short notes show everything; long ones fold each ### list until the
+// reader reaches that ## so the panel stays scannable.
+const collapse = total > 10 && sections.some((s) => s.children.length > 0);
 ---
 
 {
-  toc.length > 0 && (
-    <nav class="toc" aria-label="目录">
+  sections.length > 0 && (
+    <nav class="toc thin-scroll" aria-label="目录" data-collapse={collapse ? '' : undefined}>
       <p class="toc-title mono">On this page</p>
       <ul>
-        {toc.map((h) => (
-          <li class:list={['toc-item', `depth-${h.depth}`]}>
-            <a href={`#${h.slug}`} data-toc-link={h.slug}>
-              {h.text}
+        {sections.map((s) => (
+          <li
+            class:list={['toc-item', `depth-${s.depth}`, { 'has-sub': s.children.length > 0 }]}
+            data-toc-section={s.slug}
+          >
+            <a href={`#${s.slug}`} data-toc-link={s.slug}>
+              {s.text}
             </a>
+            {s.children.length > 0 && (
+              <ul class="toc-sub">
+                {s.children.map((c) => (
+                  <li class="toc-item depth-3">
+                    <a href={`#${c.slug}`} data-toc-link={c.slug} data-toc-parent={s.slug}>
+                      {c.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
+      <button type="button" class="toc-top mono" data-toc-top hidden>
+        ↑ 回到顶部
+      </button>
     </nav>
   )
 }
@@ -48,6 +82,8 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+  .toc > ul {
     border-left: 1px solid var(--border);
   }
   .toc-item a {
@@ -70,30 +106,132 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
     color: var(--hue, var(--accent));
     border-left-color: var(--hue, var(--accent));
   }
+  /* The ## whose section you're in, while a ### inside it is the active one */
+  .toc-item.depth-2.current > a:not(.active) {
+    color: var(--text-primary);
+  }
+
+  /* Folding: ### lists open only under the current ## */
+  .toc[data-collapse] .toc-sub {
+    display: none;
+  }
+  .toc[data-collapse] .current > .toc-sub {
+    display: block;
+    animation: toc-open 0.25s ease;
+  }
+  @keyframes toc-open {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  .toc[data-collapse] .has-sub:not(.current) > a::after {
+    content: ' ▸';
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  .toc-top {
+    margin: 16px 0 0 14px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .toc-top:hover {
+    color: var(--hue, var(--accent));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toc[data-collapse] .current > .toc-sub {
+      animation: none;
+    }
+  }
 </style>
 
 <script>
-  // Scroll spy: highlights the TOC entry for the section currently in view
+  // Scroll spy: the active heading is the last one whose top has passed
+  // just under the sticky nav. Its ## section is marked current, which
+  // also unfolds that section's ### list.
+  const toc = document.querySelector<HTMLElement>('.toc');
   const links = Array.from(
     document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')
   );
-  if (links.length > 0) {
-    const bySlug = new Map(links.map((l) => [l.dataset.tocLink, l]));
-    const headings = links
-      .map((l) => document.getElementById(l.dataset.tocLink!))
-      .filter((el): el is HTMLElement => !!el);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            links.forEach((l) => l.classList.remove('active'));
-            bySlug.get(entry.target.id)?.classList.add('active');
+  if (toc && links.length > 0) {
+    const targets = links
+      .map((link) => ({ link, el: document.getElementById(link.dataset.tocLink!) }))
+      .filter((t): t is { link: HTMLAnchorElement; el: HTMLElement } => !!t.el);
+    const sections = new Map(
+      Array.from(toc.querySelectorAll<HTMLElement>('[data-toc-section]')).map((li) => [
+        li.dataset.tocSection!,
+        li,
+      ])
+    );
+    const topBtn = toc.querySelector<HTMLButtonElement>('[data-toc-top]');
+    const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64;
+
+    let activeLink: HTMLAnchorElement | null = null;
+    let currentSection: HTMLElement | null = null;
+
+    const update = () => {
+      const line = navH + 40;
+      let hit: (typeof targets)[number] | undefined;
+      for (const t of targets) {
+        if (t.el.getBoundingClientRect().top <= line) hit = t;
+        else break;
+      }
+      // A short last section can never reach the line; at the very bottom
+      // of the page, it is the one being read.
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) {
+        hit = targets[targets.length - 1];
+      }
+
+      const link = hit?.link ?? null;
+      if (link !== activeLink) {
+        activeLink?.classList.remove('active');
+        link?.classList.add('active');
+        activeLink = link;
+
+        const sectionSlug = link?.dataset.tocParent ?? link?.dataset.tocLink;
+        const section = (sectionSlug && sections.get(sectionSlug)) || null;
+        if (section !== currentSection) {
+          currentSection?.classList.remove('current');
+          section?.classList.add('current');
+          currentSection = section;
+        }
+
+        // Keep the active entry visible inside a long, scrolled panel
+        if (link) {
+          const r = link.getBoundingClientRect();
+          const box = toc.getBoundingClientRect();
+          if (r.top < box.top || r.bottom > box.bottom) {
+            toc.scrollTop += r.top - box.top - box.height / 3;
           }
         }
-      },
-      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
-    );
-    headings.forEach((h) => observer.observe(h));
+      }
+
+      if (topBtn) topBtn.hidden = window.scrollY < 600;
+    };
+
+    let queued = false;
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        update();
+      });
+    };
+    addEventListener('scroll', onScroll, { passive: true });
+    addEventListener('resize', onScroll, { passive: true });
+    update();
+
+    topBtn?.addEventListener('click', () => {
+      const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+    });
   }
 </script>

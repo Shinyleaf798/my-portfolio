@@ -1,5 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import { url } from '../lib/url';
 
 interface Props {
@@ -17,6 +17,7 @@ const { currentId } = Astro.props;
 const notes = (await getCollection('notes')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
 );
+const current = notes.find((n) => n.id === currentId);
 
 const groups = new Map<string, typeof notes>();
 for (const n of notes) {
@@ -31,29 +32,85 @@ for (const n of notes) {
 const categories = [...groups.entries()].sort(
   (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0])
 );
+
+// Project notes get their own group on top: the other notes written while
+// building the same project, oldest first so it reads as the build log.
+const projectId =
+  current?.data.type === 'project' ? current.data.relatedProject : undefined;
+const project = projectId ? await getEntry('projects', projectId) : undefined;
+const projectNotes = projectId
+  ? notes
+      .filter((n) => n.data.relatedProject === projectId)
+      .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
+  : [];
+const showProject = projectNotes.length > 1;
+
+// Only the group(s) holding the current note start open; the project group,
+// when present, takes that role instead.
+const isOpen = (items: typeof notes) =>
+  !showProject && items.some((n) => n.id === currentId);
 ---
 
-<nav class="notes-sidebar" aria-label="笔记导航">
+<nav class="notes-sidebar thin-scroll" aria-label="笔记导航">
   {
-    categories.map(([cat, items]) => (
-      <div class="ns-group">
-        <p class="ns-cat">{cat}</p>
+    showProject && (
+      <details class="ns-group ns-project" open>
+        <summary class="ns-cat">
+          <span>本项目 · {project?.data.title ?? projectId}</span>
+          <span class="ns-count">{projectNotes.length}</span>
+        </summary>
         <ul>
-          {items.map((n) => (
+          {projectNotes.map((n) => (
             <li>
               <a
                 href={url(`/notes/${n.id}`)}
                 class:list={['ns-link', { active: n.id === currentId }]}
+                aria-current={n.id === currentId ? 'page' : undefined}
               >
                 {n.data.title}
               </a>
             </li>
           ))}
         </ul>
-      </div>
+      </details>
+    )
+  }
+  {
+    categories.map(([cat, items]) => (
+      <details class="ns-group" open={isOpen(items)}>
+        <summary class="ns-cat">
+          <span>{cat}</span>
+          <span class="ns-count">{items.length}</span>
+        </summary>
+        <ul>
+          {items.map((n) => (
+            <li>
+              <a
+                href={url(`/notes/${n.id}`)}
+                class:list={['ns-link', { active: n.id === currentId }]}
+                aria-current={n.id === currentId && !showProject ? 'page' : undefined}
+              >
+                {n.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </details>
     ))
   }
 </nav>
+
+<script>
+  // Bring the current note into view inside the sidebar itself, without
+  // scrolling the page.
+  const nav = document.querySelector<HTMLElement>('.notes-sidebar');
+  const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+  if (nav && active) {
+    const offset =
+      active.getBoundingClientRect().top - nav.getBoundingClientRect().top;
+    nav.scrollTop += offset - nav.clientHeight / 3;
+  }
+</script>
 
 <style>
   .notes-sidebar {
@@ -68,6 +125,12 @@ const categories = [...groups.entries()].sort(
     margin-bottom: 24px;
   }
   .ns-cat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
     font-family: var(--font-mono);
     font-size: 11px;
     text-transform: uppercase;
@@ -75,6 +138,32 @@ const categories = [...groups.entries()].sort(
     color: var(--text-primary);
     font-weight: 600;
     margin: 0 0 10px;
+  }
+  .ns-cat::-webkit-details-marker {
+    display: none;
+  }
+  .ns-cat::before {
+    content: '▸';
+    font-size: 9px;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+  }
+  .ns-group[open] > .ns-cat::before {
+    transform: rotate(90deg);
+  }
+  .ns-cat:hover {
+    color: var(--hue, var(--accent));
+  }
+  .ns-count {
+    margin-left: auto;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  .ns-group:not([open]) {
+    margin-bottom: 12px;
+  }
+  .ns-project > .ns-cat {
+    color: var(--hue, var(--accent));
   }
   .ns-group ul {
     list-style: none;

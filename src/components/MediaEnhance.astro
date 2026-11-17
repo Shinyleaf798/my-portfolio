@@ -1,0 +1,161 @@
+---
+// Site-wide upgrade for images inside rendered markdown (.markdown img):
+// fade in on scroll, lift on hover, click to view full size.
+// Notes need no changes; every page that renders markdown gets it.
+---
+
+<style is:global>
+  /* Only hidden once the script has run, so no-JS readers still see images */
+  .markdown img.reveal {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+  }
+  .markdown img.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .markdown img[data-zoomable] {
+    cursor: zoom-in;
+  }
+  .markdown img[data-zoomable]:hover {
+    border-color: var(--hue, var(--accent));
+    box-shadow: 0 12px 32px -14px var(--shadow);
+  }
+  .markdown img.reveal.is-visible[data-zoomable]:hover {
+    transform: translateY(-2px);
+  }
+
+  .lightbox {
+    border: 0;
+    padding: 0;
+    margin: auto;
+    max-width: 100vw;
+    max-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    display: none;
+    cursor: zoom-out;
+  }
+  .lightbox[open] {
+    display: grid;
+    place-items: center;
+    animation: lb-fade 0.2s ease;
+  }
+  .lightbox::backdrop {
+    background: #000000d9;
+    backdrop-filter: blur(4px);
+  }
+  .lightbox figure {
+    margin: 0;
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+  }
+  .lightbox img {
+    max-width: min(1400px, calc(100vw - 32px));
+    max-height: calc(100vh - 96px);
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    animation: lb-zoom 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .lightbox figcaption {
+    color: #e6edf3;
+    font-size: 13px;
+    text-align: center;
+  }
+  .lightbox figcaption:empty {
+    display: none;
+  }
+  @keyframes lb-fade {
+    from { opacity: 0; }
+  }
+  @keyframes lb-zoom {
+    from { transform: scale(0.96); opacity: 0; }
+  }
+  html.lightbox-open {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .markdown img.reveal { transition: none; }
+    .lightbox[open], .lightbox img { animation: none; }
+  }
+</style>
+
+<script>
+  const images = Array.from(
+    document.querySelectorAll<HTMLImageElement>('.markdown img')
+  );
+
+  if (images.length > 0) {
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Scroll reveal
+    if (!reduceMotion && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              e.target.classList.add('is-visible');
+              io.unobserve(e.target);
+            }
+          }
+        },
+        { rootMargin: '0px 0px -8% 0px' }
+      );
+      images.forEach((img) => {
+        img.classList.add('reveal');
+        io.observe(img);
+      });
+    }
+
+    // Lightbox: built once, on first use. Images already wrapped in a link
+    // keep their link behaviour instead.
+    let dialog: HTMLDialogElement | null = null;
+    let big: HTMLImageElement;
+    let caption: HTMLElement;
+
+    const open = (img: HTMLImageElement) => {
+      if (!dialog) {
+        dialog = document.createElement('dialog');
+        dialog.className = 'lightbox';
+        dialog.setAttribute('aria-label', '查看大图');
+        dialog.innerHTML = '<figure><img alt="" /><figcaption></figcaption></figure>';
+        big = dialog.querySelector('img')!;
+        caption = dialog.querySelector('figcaption')!;
+        dialog.addEventListener('click', () => dialog!.close());
+        dialog.addEventListener('close', () =>
+          document.documentElement.classList.remove('lightbox-open')
+        );
+        document.body.append(dialog);
+      }
+      big.src = img.currentSrc || img.src;
+      big.alt = img.alt;
+      caption.textContent = img.title || img.alt || '';
+      document.documentElement.classList.add('lightbox-open');
+      dialog.showModal();
+    };
+
+    images
+      .filter((img) => !img.closest('a'))
+      .forEach((img) => {
+        img.dataset.zoomable = '';
+        img.tabIndex = 0;
+        img.addEventListener('click', () => open(img));
+        img.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            open(img);
+          }
+        });
+      });
+  }
+</script>

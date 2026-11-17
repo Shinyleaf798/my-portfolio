@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460" width="1200" height="460" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8b949e"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="460" rx="16" fill="#0f1420"/>
+
+  <!-- markdown file -->
+  <text x="40" y="52" fill="#fbbf24" font-size="15" font-family="'JetBrains Mono', monospace" letter-spacing="1.5">NOTE.MD</text>
+  <rect x="40" y="76" width="420" height="344" rx="12" fill="#161b2e" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="56" y="92" width="388" height="132" rx="8" fill="#fbbf2414" stroke="#fbbf24" stroke-dasharray="5 4"/>
+  <g font-family="'JetBrains Mono', monospace" font-size="15">
+    <text x="72" y="120" fill="#8b949e">---</text>
+    <text x="72" y="144" fill="#e6edf3">title: 一次推送之后…</text>
+    <text x="72" y="168" fill="#e6edf3">date: 2026-11-17</text>
+    <text x="72" y="192" fill="#e6edf3">tags: [Astro, CI/CD]</text>
+    <text x="72" y="214" fill="#8b949e">---</text>
+  </g>
+  <rect x="56" y="240" width="388" height="164" rx="8" fill="#2dd4bf14" stroke="#2dd4bf" stroke-dasharray="5 4"/>
+  <g font-family="'JetBrains Mono', monospace" font-size="15">
+    <text x="72" y="270" fill="#e6edf3">## 为什么要两个仓库</text>
+    <text x="72" y="296" fill="#8b949e">正文段落……</text>
+    <text x="72" y="322" fill="#e6edf3">![图](./flow.svg)</text>
+    <text x="72" y="348" fill="#e6edf3">### 1. 推送触发</text>
+    <text x="72" y="374" fill="#8b949e">……</text>
+  </g>
+
+  <!-- arrows -->
+  <path d="M448 158 C 560 158, 560 120, 680 120" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#a2)"/>
+  <path d="M448 322 C 560 322, 560 300, 680 300" fill="none" stroke="#2dd4bf" stroke-width="2" marker-end="url(#a2)"/>
+  <text x="520" y="110" fill="#fbbf24" font-size="13">拆成字段</text>
+  <text x="520" y="350" fill="#2dd4bf" font-size="13">整块渲染</text>
+
+  <!-- page -->
+  <text x="690" y="52" fill="#fbbf24" font-size="15" font-family="'JetBrains Mono', monospace" letter-spacing="1.5">PAGE</text>
+  <rect x="690" y="76" width="470" height="344" rx="12" fill="#161b2e" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="706" y="92" width="438" height="120" rx="8" fill="#fbbf2414" stroke="#fbbf24"/>
+  <text x="724" y="120" fill="#8b949e" font-size="13">header · 列表卡片 · 标签筛选 · 搜索</text>
+  <rect x="724" y="134" width="260" height="18" rx="4" fill="#e6edf3" opacity="0.85"/>
+  <rect x="724" y="162" width="360" height="10" rx="4" fill="#8b949e" opacity="0.6"/>
+  <rect x="724" y="186" width="58" height="16" rx="8" fill="#ffffff14"/>
+  <rect x="790" y="186" width="70" height="16" rx="8" fill="#ffffff14"/>
+  <rect x="706" y="226" width="438" height="178" rx="8" fill="#2dd4bf14" stroke="#2dd4bf"/>
+  <text x="724" y="254" fill="#8b949e" font-size="13">&lt;div class="markdown"&gt;&lt;Content /&gt;&lt;/div&gt;</text>
+  <rect x="724" y="270" width="200" height="12" rx="4" fill="#e6edf3" opacity="0.8"/>
+  <rect x="724" y="292" width="400" height="8" rx="4" fill="#8b949e" opacity="0.5"/>
+  <rect x="724" y="308" width="380" height="8" rx="4" fill="#8b949e" opacity="0.5"/>
+  <rect x="724" y="328" width="400" height="60" rx="6" fill="#ffffff0d"/>
+</svg>
