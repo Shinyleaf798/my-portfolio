@@ -4,10 +4,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import NoteEntry from '../../components/NoteEntry.astro';
 import TagFilter from '../../components/TagFilter.astro';
 import ViewSwitch from '../../components/ViewSwitch.astro';
+import TimelineSync from '../../components/TimelineSync.astro';
 import { url } from '../../lib/url';
 import { allTags } from '../../lib/tags';
 import { facetGroups } from '../../lib/tagGroups';
 import { projectTitles } from '../../lib/related';
+import { groupByMonth } from '../../lib/months';
+import { categoryColor } from '../../lib/categoryColor';
+import { formatDate } from '../../lib/format';
 
 const notes = (await getCollection('notes')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
@@ -15,44 +19,78 @@ const notes = (await getCollection('notes')).sort(
 
 const groups = facetGroups(notes);
 const projectTitle = await projectTitles();
+
+const months = groupByMonth(notes, (n) => n.data.date);
+// The two newest months start open; older ones fold so a long archive
+// stays one screen of month headings.
+const OPEN_MONTHS = 2;
+// A "latest" strip only earns its place once the list is long enough
+// that the newest notes would otherwise be a scroll away.
+const recent = notes.length >= 6 ? notes.slice(0, 3) : [];
 ---
 
 <BaseLayout title="Notes" description="学习技术与语言时遇到的问题和解决方法。" hue="notes">
   <div class="section container" data-filter-scope>
     <div class="page-header head-split">
       <div>
-        <h1>Notes</h1>
-        <p>
-          学习过程中的问题与解法, 共 <span class="count" data-result-count>{notes.length}</span> 篇 ·
-          <a href={url('/notes/tags')}>按标签浏览</a>
-        </p>
+        <p class="eyebrow">Notes · <span class="count" data-result-count>{notes.length}</span> 篇</p>
+        <h1>学习过程中的问题与解法</h1>
+        <p><a href={url('/notes/tags')}>按标签浏览</a></p>
       </div>
       <ViewSwitch target="notes" />
     </div>
-
     <TagFilter groups={groups} />
 
-    <div class="rows listing" data-view="rows" data-view-target="notes">
+    {
+      recent.length > 0 && (
+        <section class="recent" aria-labelledby="recent-h" data-hide-when-filtering>
+          <h2 id="recent-h" class="recent-h">最近更新</h2>
+          <div class="recent-grid">
+            {recent.map((n) => (
+              <a class="recent-card" href={url(`/notes/${n.id}`)} style={`--cat: ${categoryColor(n.data.category)}`}>
+                <span class="cat-label">
+                  <span class="cat-dot"></span>
+                  {n.data.category} · {formatDate(n.data.date).slice(5)}
+                </span>
+                <span class="recent-title">{n.data.title}</span>
+                <span class="recent-summary">{n.data.summary}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <div class="timeline" data-view="rows" data-view-target="notes">
       {
-        notes.map((n) => (
-          <NoteEntry
-            id={n.id}
-            title={n.data.title}
-            date={n.data.date}
-            summary={n.data.summary}
-            category={n.data.category}
-            tags={allTags(n.data)}
-            type={n.data.type}
-            projectTitle={
-              n.data.relatedProject
-                ? projectTitle.get(n.data.relatedProject)
-                : undefined
-            }
-          />
+        months.map((m, i) => (
+          <details class="month" open={i < OPEN_MONTHS}>
+            <summary>
+              <span class="month-label">{m.label}</span>
+              <span class="month-count" data-month-count data-unit="篇">{m.items.length} 篇</span>
+            </summary>
+            <div class="month-list">
+              {m.items.map((n) => (
+                <NoteEntry
+                  id={n.id}
+                  title={n.data.title}
+                  date={n.data.date}
+                  summary={n.data.summary}
+                  category={n.data.category}
+                  tags={allTags(n.data)}
+                  type={n.data.type}
+                  projectTitle={
+                    n.data.relatedProject
+                      ? projectTitle.get(n.data.relatedProject)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </details>
         ))
       }
     </div>
-
     {/* Applies the saved view before paint, so a card-view reader does not
         see the list flash past first. */}
     <script is:inline>
@@ -67,6 +105,7 @@ const projectTitle = await projectTitles();
         } catch (e) {}
       })();
     </script>
+    <TimelineSync />
   </div>
 </BaseLayout>
 
@@ -81,5 +120,67 @@ const projectTitle = await projectTitles();
   }
   .head-split > div {
     min-width: 0;
+  }
+  .eyebrow {
+    margin: 0 0 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--hue, var(--accent));
+  }
+
+  .recent {
+    margin: 8px 0 40px;
+  }
+  .recent-h {
+    margin: 0 0 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+  }
+  .recent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .recent-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    color: inherit;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .recent-card:hover {
+    border-color: var(--cat);
+    transform: translateY(-2px);
+  }
+  .recent-title {
+    font-size: 16.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+  }
+  .recent-summary {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  [data-view='cards'] .month-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    padding-top: 16px;
   }
 </style>

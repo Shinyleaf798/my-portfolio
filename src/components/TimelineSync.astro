@@ -1,0 +1,37 @@
+---
+// Keeps a month timeline in step with TagFilter: each month shows how many
+// of its entries match, empty months disappear, every month opens while a
+// filter is active (and goes back to its own state when cleared), and
+// anything marked [data-hide-when-filtering] steps aside meanwhile.
+---
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-filter-scope]').forEach((scope) => {
+    const months = Array.from(scope.querySelectorAll<HTMLDetailsElement>('details.month'));
+    if (months.length === 0) return;
+
+    const initiallyOpen = new Map(months.map((m) => [m, m.open]));
+    const asides = scope.querySelectorAll<HTMLElement>('[data-hide-when-filtering]');
+    let wasFiltering = false;
+
+    const sync = (filtering: boolean) => {
+      for (const m of months) {
+        const entries = Array.from(m.querySelectorAll<HTMLElement>('[data-tags]'));
+        const visible = entries.filter((e) => e.style.display !== 'none').length;
+        m.hidden = visible === 0;
+        const count = m.querySelector<HTMLElement>('[data-month-count]');
+        if (count) count.textContent = `${visible} ${count.dataset.unit ?? ''}`.trim();
+        if (filtering && !wasFiltering) m.open = true;
+        else if (!filtering && wasFiltering) m.open = initiallyOpen.get(m) ?? false;
+      }
+      asides.forEach((el) => (el.hidden = filtering));
+      wasFiltering = filtering;
+    };
+
+    scope.addEventListener('tagfilter', (e) =>
+      sync((e as CustomEvent<{ active: number }>).detail.active > 0)
+    );
+    // TagFilter may already have applied a ?tag= preset before this ran
+    sync(!!scope.querySelector('.tag-filter .tag.is-active'));
+  });
+</script>

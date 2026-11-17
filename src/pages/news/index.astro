@@ -3,9 +3,11 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NewsEntry from '../../components/NewsEntry.astro';
 import TagFilter from '../../components/TagFilter.astro';
+import TimelineSync from '../../components/TimelineSync.astro';
 import { allTags } from '../../lib/tags';
 import { facetGroups } from '../../lib/tagGroups';
 import { noteTitles } from '../../lib/related';
+import { groupByMonth } from '../../lib/months';
 
 const news = (await getCollection('news')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime()
@@ -13,36 +15,68 @@ const news = (await getCollection('news')).sort(
 
 const groups = facetGroups(news);
 const noteTitle = await noteTitles();
+
+const months = groupByMonth(news, (n) => n.data.date);
+const OPEN_MONTHS = 2;
 ---
 
 <BaseLayout title="News" description="平时看到的、觉得值得记一笔的资讯与个人理解。" hue="news">
   <div class="section container" data-filter-scope>
     <div class="page-header">
-      <h1>News</h1>
-      <p>
-        看到的资讯 + 自己的解读, 共 <span class="count" data-result-count>{news.length}</span> 条。
-        只记和手上的东西有关的。
-      </p>
+      <p class="eyebrow">News · <span class="count" data-result-count>{news.length}</span> 条</p>
+      <h1>看到的资讯 + 自己的解读</h1>
+      <p>只记和手上的东西有关的。</p>
     </div>
-
     <TagFilter groups={groups} />
 
-    <div class="rows">
+    {news.length === 0 && <p class="empty-state">还没有资讯。</p>}
+
+    <div class="timeline feed">
       {
-        news.map((n) => (
-          <NewsEntry
-            id={n.id}
-            title={n.data.title}
-            date={n.data.date}
-            summary={n.data.summary}
-            tags={allTags(n.data)}
-            sourceUrl={n.data.sourceUrl}
-            relatedNoteTitles={(n.data.relatedNotes ?? [])
-              .map((id) => noteTitle.get(id))
-              .filter((t): t is string => !!t)}
-          />
+        months.map((m, i) => (
+          <details class="month" open={i < OPEN_MONTHS}>
+            <summary>
+              <span class="month-label">{m.label}</span>
+              <span class="month-count" data-month-count data-unit="条">{m.items.length} 条</span>
+            </summary>
+            <div class="month-list">
+              {m.items.map((n) => (
+                <NewsEntry
+                  id={n.id}
+                  title={n.data.title}
+                  date={n.data.date}
+                  summary={n.data.summary}
+                  tags={allTags(n.data)}
+                  sourceUrl={n.data.sourceUrl}
+                  category={n.data.domains[0]}
+                  relatedNoteTitles={(n.data.relatedNotes ?? [])
+                    .map((id) => noteTitle.get(id))
+                    .filter((t): t is string => !!t)}
+                />
+              ))}
+            </div>
+          </details>
         ))
       }
     </div>
+    <TimelineSync />
   </div>
 </BaseLayout>
+
+<style>
+  .eyebrow {
+    margin: 0 0 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--hue, var(--accent));
+  }
+  .page-header .eyebrow {
+    color: var(--hue, var(--accent));
+  }
+  /* A feed reads best as one narrower column */
+  .feed {
+    max-width: 880px;
+  }
+</style>

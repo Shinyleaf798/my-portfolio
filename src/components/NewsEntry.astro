@@ -1,6 +1,7 @@
 ---
 import { url } from '../lib/url';
 import { formatDate } from '../lib/format';
+import { categoryColor } from '../lib/categoryColor';
 
 interface Props {
   id: string;
@@ -9,15 +10,25 @@ interface Props {
   summary: string;
   tags: string[];
   sourceUrl: string;
+  // First domain, shown as a coloured label
+  category?: string;
   // Titles of the notes this item led to
   relatedNoteTitles?: string[];
 }
 
-const { id, title, date, summary, tags, sourceUrl, relatedNoteTitles = [] } =
-  Astro.props;
+const {
+  id,
+  title,
+  date,
+  summary,
+  tags,
+  sourceUrl,
+  category,
+  relatedNoteTitles = [],
+} = Astro.props;
 
 const d = formatDate(date);
-const [year, rest] = [d.slice(0, 4), d.slice(5)];
+const [year, month, day] = [d.slice(0, 4), d.slice(5, 7), d.slice(8, 10)];
 
 // Bare domain, so the source reads as a place rather than a URL
 let host = '';
@@ -28,29 +39,125 @@ try {
 }
 ---
 
-<a class="row" href={url(`/news/${id}`)} data-tags={tags.join(',')}>
-  <div class="row-when">
-    <b>{rest}</b>{year}
-  </div>
-  <div>
-    <h3 class="row-title">
-      {title}
-      {host && <span class="row-ext">{host}</span>}
-    </h3>
-    <p class="row-summary">{summary}</p>
-    <div class="row-meta">
-      {tags.map((t) => <span class="tag" data-static>{t}</span>)}
-      {relatedNoteTitles.length > 0 && (
-        <span>
-          由此写了 <span class="to-notes">{relatedNoteTitles.join('、')}</span>
+<a
+  class="news"
+  href={url(`/news/${id}`)}
+  data-tags={tags.join(',')}
+  style={category ? `--cat: ${categoryColor(category)}` : undefined}
+>
+  <span class="news-date" title={d}>
+    <b>{day}</b>
+    <span>{month} 月 · {year}</span>
+  </span>
+  <span class="news-body">
+    <span class="news-src">
+      {host && <span class="news-favicon" aria-hidden="true">{host.charAt(0).toUpperCase()}</span>}
+      {host && <span>{host}</span>}
+      {category && (
+        <span class="cat-label">
+          <span class="cat-dot"></span>
+          {category}
         </span>
       )}
-    </div>
-  </div>
+    </span>
+    <span class="news-title">{title}</span>
+    {summary && <span class="news-summary">{summary}</span>}
+    {relatedNoteTitles.length > 0 && (
+      <span class="news-related">→ 由此写了 {relatedNoteTitles.join('、')}</span>
+    )}
+  </span>
 </a>
 
 <style>
-  .tag[data-static] {
-    cursor: default;
+  .news {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 28px;
+    padding: 24px 12px;
+    margin: 0 -12px;
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: inherit;
+    transition: background 0.18s ease;
+  }
+  .news:hover {
+    background: var(--surface-2);
+  }
+  .news:hover .news-title {
+    color: var(--hue, var(--accent));
+  }
+  .news-date {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .news-date b {
+    font-size: 38px;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .news-date span {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+  .news-body {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+  }
+  .news-src {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .news-favicon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: var(--surface-3);
+    font-size: 10px;
+    color: var(--text-primary);
+  }
+  .news-title {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+    transition: color 0.18s ease;
+  }
+  .news-summary {
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    max-width: 68ch;
+  }
+  .news-related {
+    font-size: 13px;
+    color: var(--c-notes);
+  }
+
+  @media (max-width: 640px) {
+    .news {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .news-date {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .news-date b {
+      font-size: 24px;
+    }
   }
 </style>

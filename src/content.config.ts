@@ -67,16 +67,24 @@ const projects = defineCollection({
     base: './src/content/projects',
     generateId: folderId,
   }),
-  schema: z
-    .object({
-      title: z.string(),
-      date: z.coerce.date(),
-      featured: z.boolean().default(false),
-      repoUrl: z.string().url().optional(),
-      ...prose,
-      ...facets,
-    })
-    .transform(withSummary),
+  // `image()` resolves a path relative to the entry, so a cover sits in the
+  // project's own folder: project/corddaily/cover.png -> cover: ./cover.png
+  schema: ({ image }) =>
+    z
+      .object({
+        title: z.string(),
+        date: z.coerce.date(),
+        featured: z.boolean().default(false),
+        repoUrl: z.string().url().optional(),
+        // Screenshot shown on the Projects showcase and card
+        cover: image().optional(),
+        // "phone" frames the cover as an app screen, "browser" as a site;
+        // leave it out for a plain image
+        coverFrame: z.enum(['phone', 'browser']).optional(),
+        ...prose,
+        ...facets,
+      })
+      .transform(withSummary),
 });
 
 const news = defineCollection({

@@ -57,7 +57,7 @@ const relatedNotes = (await getCollection('notes'))
 
       {
         relatedNotes.length > 0 && (
-          <section class="related-notes" data-pagefind-ignore>
+          <section class="related-notes" id="dev-notes" data-pagefind-ignore>
             <h2 class="rn-title">做这个时写的笔记</h2>
             <p class="rn-hint">开发过程里留下的记录, 不是事后补的文档。</p>
             <ul class="trail">

@@ -1,6 +1,8 @@
 ---
 import { url } from '../lib/url';
 import { formatDate } from '../lib/format';
+import type { ImageMetadata } from 'astro';
+import ProjectMedia from './ProjectMedia.astro';
 
 interface Props {
   id: string;
@@ -11,15 +13,36 @@ interface Props {
   featured?: boolean;
   // How many notes were written while building this
   noteCount?: number;
+  // With `withMedia`, a screenshot (or a placeholder) heads the card
+  withMedia?: boolean;
+  cover?: ImageMetadata;
+  coverFrame?: 'phone' | 'browser';
+  stack?: string[];
 }
 
-const { id, title, date, summary, tags, noteCount = 0 } = Astro.props;
+const {
+  id,
+  title,
+  date,
+  summary,
+  tags,
+  noteCount = 0,
+  withMedia = false,
+  cover,
+  coverFrame,
+  stack = [],
+} = Astro.props;
 
 const d = formatDate(date);
 const [year, month] = [d.slice(0, 4), d.slice(5, 7)];
 ---
 
-<a class="card" href={url(`/projects/${id}`)} data-tags={tags.join(',')}>
+<a class:list={['card', 'pm-host', { 'has-media': withMedia }]} href={url(`/projects/${id}`)} data-tags={tags.join(',')}>
+  {withMedia && (
+    <div class="card-media">
+      <ProjectMedia title={title} cover={cover} frame={coverFrame} stack={stack} size="small" />
+    </div>
+  )}
   <span class="when">{year} / {month}</span>
   <h3>{title}</h3>
   <p class="summary">{summary}</p>
@@ -32,6 +55,14 @@ const [year, month] = [d.slice(0, 4), d.slice(5, 7)];
 <style>
   .card {
     color: inherit;
+  }
+  .card.has-media {
+    padding-top: 0;
+    overflow: hidden;
+  }
+  .card-media {
+    margin: 0 -24px 18px;
+    border-bottom: 1px solid var(--border);
   }
   .card:hover h3 {
     color: var(--hue, var(--accent));

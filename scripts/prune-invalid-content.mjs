@@ -8,7 +8,8 @@
 // Run after injecting the notes repo; never exits non-zero.
 
 import { readdir, readFile, rm } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
+import { existsSync } from 'node:fs';
 import { load as parseYaml } from 'js-yaml';
 
 const CONTENT_ROOT = 'src/content';
@@ -53,7 +54,7 @@ function frontmatter(raw) {
   }
 }
 
-function problems(data, rule) {
+function problems(data, rule, file) {
   const missing = rule.required.filter((f) => data[f] === undefined || data[f] === null);
   for (const group of rule.either) {
     if (group.every((f) => data[f] === undefined || data[f] === null)) {
@@ -63,6 +64,15 @@ function problems(data, rule) {
   const issues = missing.map((f) => `缺少 ${f}`);
   if (data.date !== undefined && Number.isNaN(new Date(data.date).getTime())) {
     issues.push(`date 不是有效日期: ${JSON.stringify(data.date)}`);
+  }
+  // Astro's image() aborts the build on a missing file, same as bad YAML
+  if (typeof data.cover === 'string') {
+    if (!existsSync(join(dirname(file), data.cover))) {
+      issues.push(`cover 图片不存在: ${data.cover}`);
+    }
+  }
+  if (data.coverFrame !== undefined && !['phone', 'browser'].includes(data.coverFrame)) {
+    issues.push(`coverFrame 只能是 phone 或 browser: ${JSON.stringify(data.coverFrame)}`);
   }
   return issues;
 }
@@ -82,7 +92,7 @@ for (const [collection, rule] of Object.entries(RULES)) {
       drafts++;
       continue;
     }
-    const issues = error ? [error] : problems(data, rule);
+    const issues = error ? [error] : problems(data, rule, file);
     if (issues.length === 0) continue;
     await rm(file);
     skipped.push({ file: relative(process.cwd(), file).replace(/\\/g, '/'), issues });

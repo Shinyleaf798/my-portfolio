@@ -1,0 +1,213 @@
+---
+import type { ImageMetadata } from 'astro';
+import ProjectMedia from './ProjectMedia.astro';
+import { url } from '../lib/url';
+import { formatDate } from '../lib/format';
+import { categoryColor } from '../lib/categoryColor';
+
+// Wide showcase block for a featured project: screenshot on one side,
+// story and links on the other. `reverse` swaps the sides so a column of
+// them alternates.
+interface Props {
+  id: string;
+  title: string;
+  date: Date;
+  summary: string;
+  tags: string[];
+  stack: string[];
+  domains: string[];
+  repoUrl?: string;
+  cover?: ImageMetadata;
+  coverFrame?: 'phone' | 'browser';
+  noteCount?: number;
+  reverse?: boolean;
+}
+
+const {
+  id,
+  title,
+  date,
+  summary,
+  tags,
+  stack,
+  domains,
+  repoUrl,
+  cover,
+  coverFrame,
+  noteCount = 0,
+  reverse = false,
+} = Astro.props;
+
+const d = formatDate(date);
+const href = url(`/projects/${id}`);
+---
+
+<article class:list={['pf', 'pm-host', { reverse }]} data-tags={tags.join(',')}>
+  <a class="pf-media" href={href} tabindex="-1" aria-hidden="true">
+    <ProjectMedia title={title} cover={cover} frame={coverFrame} stack={stack} />
+  </a>
+  <div class="pf-body">
+    <span class="pf-when">Featured · {d.slice(0, 4)}/{d.slice(5, 7)}</span>
+    <h2 class="pf-title"><a href={href}>{title}</a></h2>
+    <p class="pf-summary">{summary}</p>
+    {
+      stack.length > 0 && (
+        <ul class="pf-stack" aria-label="技术栈">
+          {stack.slice(0, 7).map((s) => <li>{s}</li>)}
+        </ul>
+      )
+    }
+    {
+      domains.length > 0 && (
+        <div class="pf-domains">
+          {domains.map((dm) => (
+            <span class="cat-label" style={`--cat: ${categoryColor(dm)}`}>
+              <span class="cat-dot"></span>
+              {dm}
+            </span>
+          ))}
+        </div>
+      )
+    }
+    <div class="pf-actions">
+      <a class="pf-btn pf-primary" href={href}>查看项目</a>
+      {repoUrl && (
+        <a class="pf-btn" href={repoUrl} target="_blank" rel="noopener">↗ 仓库</a>
+      )}
+      {noteCount > 0 && (
+        <a class="pf-notes" href={`${href}#dev-notes`}>{noteCount} 篇开发笔记 →</a>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  .pf {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .pf:hover {
+    border-color: var(--hue, var(--accent));
+    box-shadow: var(--card-shadow-hover);
+  }
+  .pf.reverse {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  }
+  .pf.reverse .pf-media {
+    order: 2;
+  }
+  .pf-media {
+    display: block;
+    min-height: 360px;
+  }
+  .pf-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 36px;
+  }
+  .pf-when {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--hue, var(--accent));
+  }
+  .pf-title {
+    margin: 0;
+    font-size: 27px;
+    line-height: 1.25;
+  }
+  .pf-title a {
+    color: var(--text-primary);
+  }
+  .pf-title a:hover {
+    color: var(--hue, var(--accent));
+  }
+  .pf-summary {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .pf-stack {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pf-stack li {
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-3);
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+  .pf-domains {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .pf-actions {
+    margin-top: auto;
+    padding-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  .pf-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .pf-btn:hover {
+    border-color: var(--hue, var(--accent));
+    color: var(--text-primary);
+  }
+  .pf-primary {
+    background: var(--hue, var(--accent));
+    border-color: var(--hue, var(--accent));
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  .pf-primary:hover {
+    color: var(--accent-ink);
+    background: var(--accent-hover);
+  }
+  .pf-notes {
+    font-size: 13px;
+    color: var(--c-notes);
+    padding: 0 4px;
+  }
+
+  @media (max-width: 860px) {
+    .pf,
+    .pf.reverse {
+      grid-template-columns: 1fr;
+    }
+    .pf.reverse .pf-media {
+      order: 0;
+    }
+    .pf-media {
+      min-height: 260px;
+    }
+    .pf-body {
+      padding: 24px;
+    }
+  }
+</style>

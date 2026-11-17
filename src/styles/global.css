@@ -38,6 +38,13 @@
   --shadow: #000000aa;
   --card-shadow: none;
   --card-shadow-hover: 0 8px 30px -12px var(--accent-dim);
+  /* Category colours (lib/categoryColor.ts) */
+  --cat-1: #60a5fa;
+  --cat-2: #f472b6;
+  --cat-3: #fb923c;
+  --cat-4: #a3e635;
+  --cat-5: #d8b4fe;
+  --cat-6: #fca5a5;
   --scroll-thumb: #ffffff24;
   --scroll-thumb-hover: #ffffff40;
 
@@ -85,6 +92,12 @@
   --shadow: #1f232833;
   --card-shadow: 0 1px 3px #1f23281a;
   --card-shadow-hover: 0 10px 30px -12px #1f232833;
+  --cat-1: #1d4ed8;
+  --cat-2: #be185d;
+  --cat-3: #c2410c;
+  --cat-4: #4d7c0f;
+  --cat-5: #7e22ce;
+  --cat-6: #b91c1c;
   --scroll-thumb: #1f232829;
   --scroll-thumb-hover: #1f232847;
 }
@@ -908,4 +921,75 @@ a.pill:hover {
   width: 13px;
   height: 13px;
   flex: none;
+}
+
+/* ---------- Category dot ----------
+   Small coloured marker for an entry's category; set --cat on a parent. */
+.cat-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat, var(--text-muted));
+}
+.cat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cat, var(--text-muted));
+  white-space: nowrap;
+}
+
+/* ---------- Month timeline (notes, news) ----------
+   Each month is a <details>; its summary sticks under the nav while
+   you scroll through that month. */
+.timeline {
+  display: grid;
+  gap: 8px;
+}
+.month > summary {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: 5;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 16px 0 12px;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.month > summary::-webkit-details-marker {
+  display: none;
+}
+.month > summary::before {
+  content: '▸';
+  align-self: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+.month[open] > summary::before {
+  transform: rotate(90deg);
+}
+.month-label {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.month > summary:hover .month-label {
+  color: var(--hue, var(--accent));
+}
+.month-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.month-list {
+  padding: 4px 0 20px;
 }

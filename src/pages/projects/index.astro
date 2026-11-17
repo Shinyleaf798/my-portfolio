@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
+import ProjectFeature from '../../components/ProjectFeature.astro';
 import TagFilter from '../../components/TagFilter.astro';
 import { allTags } from '../../lib/tags';
 import { facetGroups } from '../../lib/tagGroups';
@@ -13,34 +14,92 @@ const projects = (await getCollection('projects')).sort(
 
 const groups = facetGroups(projects);
 const trails = await notesByProject();
+
+// Featured projects get the wide showcase; the rest share a grid
+const featured = projects.filter((p) => p.data.featured);
+const others = projects.filter((p) => !p.data.featured);
+const stackOf = (d: (typeof projects)[number]['data']) => [
+  ...new Set([...d.frameworks, ...d.languages, ...d.tools]),
+];
 ---
 
 <BaseLayout title="Projects" description="折腾过的一些个人项目。" hue="projects">
   <div class="section container" data-filter-scope>
     <div class="page-header">
-      <h1>Projects</h1>
-      <p>
-        折腾过的一些个人项目 —— <span class="count" data-result-count>{projects.length}</span> 个,
-        每个后面都挂着当时写的笔记。
-      </p>
+      <p class="eyebrow">Projects · <span class="count" data-result-count>{projects.length}</span> 个</p>
+      <h1>折腾过的项目, 每个后面都挂着笔记</h1>
     </div>
-
     <TagFilter groups={groups} />
 
-    <div class="card-grid">
-      {
-        projects.map((p) => (
-          <ProjectCard
-            id={p.id}
-            title={p.data.title}
-            date={p.data.date}
-            summary={p.data.summary}
-            tags={allTags(p.data)}
-            featured={p.data.featured}
-            noteCount={(trails.get(p.id) ?? []).length}
-          />
-        ))
-      }
-    </div>
+    {
+      featured.length > 0 && (
+        <div class="showcase">
+          {featured.map((p, i) => (
+            <ProjectFeature
+              id={p.id}
+              title={p.data.title}
+              date={p.data.date}
+              summary={p.data.summary}
+              tags={allTags(p.data)}
+              stack={stackOf(p.data)}
+              domains={p.data.domains}
+              repoUrl={p.data.repoUrl}
+              cover={p.data.cover}
+              coverFrame={p.data.coverFrame}
+              noteCount={(trails.get(p.id) ?? []).length}
+              reverse={i % 2 === 1}
+            />
+          ))}
+        </div>
+      )
+    }
+
+    {
+      others.length > 0 && (
+        <>
+          {featured.length > 0 && <h2 class="more-h">更多项目</h2>}
+          <div class="card-grid">
+            {others.map((p) => (
+              <ProjectCard
+                id={p.id}
+                title={p.data.title}
+                date={p.data.date}
+                summary={p.data.summary}
+                tags={allTags(p.data)}
+                featured={p.data.featured}
+                noteCount={(trails.get(p.id) ?? []).length}
+                withMedia
+                cover={p.data.cover}
+                coverFrame={p.data.coverFrame}
+                stack={stackOf(p.data)}
+              />
+            ))}
+          </div>
+        </>
+      )
+    }
   </div>
 </BaseLayout>
+
+<style>
+  .eyebrow {
+    margin: 0 0 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--hue, var(--accent));
+  }
+  .showcase {
+    display: grid;
+    gap: 24px;
+  }
+  .more-h {
+    margin: 52px 0 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+  }
+</style>

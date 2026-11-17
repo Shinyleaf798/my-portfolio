@@ -144,6 +144,7 @@ const leadDate = lead ? formatDate(lead.data.date) : '';
               summary={n.data.summary}
               tags={allTags(n.data)}
               sourceUrl={n.data.sourceUrl}
+              category={n.data.domains[0]}
               relatedNoteTitles={(n.data.relatedNotes ?? [])
                 .map((id) => noteTitle.get(id))
                 .filter((t): t is string => !!t)}

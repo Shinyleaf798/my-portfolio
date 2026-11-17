@@ -253,6 +253,10 @@ const rows = groups.map((g) => ({
       if (countEl) countEl.textContent = String(shown);
       if (clearBtn) clearBtn.hidden = active.size === 0;
       if (emptyEl) emptyEl.hidden = shown > 0;
+      // Lets a listing regroup itself (month counts, folded sections)
+      scope.dispatchEvent(
+        new CustomEvent('tagfilter', { detail: { active: active.size, shown } })
+      );
     }
 
     function select() {
