@@ -31,15 +31,13 @@ const recent = notes.length >= 6 ? notes.slice(0, 3) : [];
 
 <BaseLayout title="Notes" description="学习技术与语言时遇到的问题和解决方法。" hue="notes">
   <div class="section container" data-filter-scope>
-    <div class="page-header head-split">
-      <div>
-        <p class="eyebrow">Notes · <span class="count" data-result-count>{notes.length}</span> 篇</p>
-        <h1>学习过程中的问题与解法</h1>
-        <p><a href={url('/notes/tags')}>按标签浏览</a></p>
-      </div>
-      <ViewSwitch target="notes" />
+    <div class="page-header">
+      <p class="eyebrow">Notes · <span class="count" data-result-count>{notes.length}</span> 篇</p>
+      <h1>学习过程中的问题与解法</h1>
     </div>
-    <TagFilter groups={groups} />
+    <TagFilter groups={groups} allTagsUrl={url('/notes/tags')}>
+      <ViewSwitch target="notes" slot="end" />
+    </TagFilter>
 
     {
       recent.length > 0 && (
@@ -110,17 +108,6 @@ const recent = notes.length >= 6 ? notes.slice(0, 3) : [];
 </BaseLayout>
 
 <style>
-  /* Title on the left, view switch pinned to the right edge */
-  .head-split {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .head-split > div {
-    min-width: 0;
-  }
   .eyebrow {
     margin: 0 0 8px;
     font-family: var(--font-mono);

@@ -32,6 +32,8 @@
       sync((e as CustomEvent<{ active: number }>).detail.active > 0)
     );
     // TagFilter may already have applied a ?tag= preset before this ran
-    sync(!!scope.querySelector('.tag-filter .tag.is-active'));
+    sync(
+      !!scope.querySelector('.tag-filter [aria-pressed="true"], .tag-filter input[data-filter]:checked')
+    );
   });
 </script>
