@@ -7,7 +7,8 @@ summary: "笔记写在一个仓库,网站在另一个仓库。从 git push 到�
 frameworks: ["Astro"]
 tools: ["GitHub Actions", "Pagefind"]
 domains: ["DevOps"]
-tags: ["CI/CD", "架构"]
+kind: 概念
+tags: ["构建"]
 ---
 
 # 一次推送之后发生了什么:笔记仓库到网站的六步

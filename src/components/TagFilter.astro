@@ -14,15 +14,20 @@ const { groups, allTagsUrl } = Astro.props;
 // unchanged, so the filter logic (OR inside a group, AND across groups)
 // and ?tag= links keep working.
 const CHIP_GROUP = '领域';
+// Note kind (踩坑 / 概念 …): one per entry, so it works as single-choice tabs
+const TYPE_GROUP = '类型';
 const TECH_GROUPS = ['编程语言', '框架 & 库', '工具 & 平台'];
 
 const chips = groups.find((g) => g.label === CHIP_GROUP);
+const tabs = groups.find((g) => g.label === TYPE_GROUP);
 const menus = [
   { id: 'tech', label: '技术', groups: groups.filter((g) => TECH_GROUPS.includes(g.label)) },
   {
     id: 'topic',
     label: '主题',
-    groups: groups.filter((g) => g.label !== CHIP_GROUP && !TECH_GROUPS.includes(g.label)),
+    groups: groups.filter(
+      (g) => g.label !== CHIP_GROUP && g.label !== TYPE_GROUP && !TECH_GROUPS.includes(g.label)
+    ),
   },
 ]
   .filter((m) => m.groups.length > 0)
@@ -39,7 +44,29 @@ const menus = [
 ---
 
 <div class="tag-filter" role="search" aria-label="按标签筛选">
-  <div class="tf-bar">
+  <div class:list={['tf-bar', { 'has-tabs': !!tabs }]}>
+    {
+      tabs && (
+        <div class="tf-tabs" role="group" aria-label={TYPE_GROUP}>
+          <button type="button" class="tf-tab" data-tf-all={TYPE_GROUP} aria-pressed="true">
+            全部
+          </button>
+          {tabs.tags.map((t) => (
+            <button
+              type="button"
+              class="tf-tab"
+              data-filter={t.tag}
+              data-group={TYPE_GROUP}
+              data-single
+              aria-pressed="false"
+            >
+              {t.tag}
+              <span class="tf-count">{t.count}</span>
+            </button>
+          ))}
+        </div>
+      )
+    }
     {
       chips && (
         <div class="tf-chips" role="group" aria-label={CHIP_GROUP}>
@@ -138,6 +165,39 @@ const menus = [
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+  }
+  /* With type tabs, they lead the top line and the domain chips drop to
+     their own line underneath */
+  .tf-bar.has-tabs .tf-chips {
+    order: 2;
+    flex-basis: 100%;
+  }
+  .tf-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tf-tab {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--text-muted);
+    font: 600 14.5px var(--font-sans);
+    line-height: 34px;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .tf-tab:hover {
+    color: var(--text-primary);
+  }
+  .tf-tab[aria-pressed='true'] {
+    color: var(--hue, var(--accent));
+    border-bottom-color: var(--hue, var(--accent));
   }
   .tf-chips {
     display: flex;
@@ -464,6 +524,12 @@ const menus = [
       }
 
       chips.forEach((c) => c.setAttribute('aria-pressed', String(active.has(c.dataset.filter || ''))));
+      allBtns.forEach((b) =>
+        b.setAttribute(
+          'aria-pressed',
+          String(![...active].some((t) => groupOf.get(t) === b.dataset.tfAll))
+        )
+      );
       boxes.forEach((b) => (b.checked = active.has(b.dataset.filter || '')));
       menus.forEach((m) => {
         const n = Array.from(m.querySelectorAll<HTMLInputElement>('input[data-filter]')).filter(
@@ -506,11 +572,27 @@ const menus = [
       history.replaceState(null, '', u);
     }
 
+    const singles = new Set(
+      chips.filter((c) => c.hasAttribute('data-single')).map((c) => c.dataset.group || '')
+    );
+    const allBtns = Array.from(filter.querySelectorAll<HTMLButtonElement>('[data-tf-all]'));
+
     const flip = (tag: string, on: boolean) => {
+      const g = groupOf.get(tag) || '';
+      // Single-choice groups (type tabs): picking one replaces the other
+      if (on && singles.has(g)) {
+        for (const t of [...active]) if (groupOf.get(t) === g) active.delete(t);
+      }
       if (on) active.add(tag);
       else active.delete(tag);
       select();
     };
+    allBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        for (const t of [...active]) if (groupOf.get(t) === b.dataset.tfAll) active.delete(t);
+        select();
+      })
+    );
     chips.forEach((c) =>
       c.addEventListener('click', () => flip(c.dataset.filter || '', !active.has(c.dataset.filter || '')))
     );

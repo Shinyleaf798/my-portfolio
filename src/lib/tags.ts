@@ -7,6 +7,8 @@ export interface Faceted {
   tools: string[];
   domains: string[];
   tags: string[];
+  // Notes only: the note's kind (踩坑 / 概念 …)
+  kind?: string;
 }
 
 /**
@@ -15,6 +17,13 @@ export interface Faceted {
  */
 export function allTags(d: Faceted): string[] {
   return [
-    ...new Set([...d.languages, ...d.frameworks, ...d.tools, ...d.domains, ...d.tags]),
+    ...new Set([
+      ...(d.kind ? [d.kind] : []),
+      ...d.languages,
+      ...d.frameworks,
+      ...d.tools,
+      ...d.domains,
+      ...d.tags,
+    ]),
   ];
 }

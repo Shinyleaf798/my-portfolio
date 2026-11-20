@@ -12,6 +12,8 @@ import type { Faceted } from './tags';
  * nothing breaks.
  */
 export const TAG_GROUPS: { label: string; from?: keyof Faceted; tags?: string[] }[] = [
+  // Notes' `kind` field — one per note. Shown as tabs, not a menu.
+  { label: '类型', from: 'kind' },
   { label: '编程语言', from: 'languages' },
   { label: '框架 & 库', from: 'frameworks' },
   { label: '领域', from: 'domains' },
@@ -61,7 +63,8 @@ export function facetGroups<T extends { data: Faceted }>(
     const seen = new Set<string>();
     for (const g of TAG_GROUPS) {
       if (!g.from) continue;
-      for (const tag of d[g.from]) {
+      // `kind` is a single string; every other facet is a list
+      for (const tag of [d[g.from] ?? []].flat()) {
         if (seen.has(tag)) continue;
         seen.add(tag);
         bump(g.label, tag);

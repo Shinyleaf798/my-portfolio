@@ -50,6 +50,10 @@ const notes = defineCollection({
       category: z.string().optional(),
       // Slugs of notes this one builds on; the linked notes list it back
       relatedNotes: z.array(z.string()).optional(),
+      // What kind of note: 踩坑 / 概念 / 流程 / 方法. One per note; shown as
+      // the tabs on top of the Notes list. A plain string, so a new kind
+      // just adds a tab instead of failing the build.
+      kind: z.string().optional(),
       ...prose,
       ...facets,
     })
